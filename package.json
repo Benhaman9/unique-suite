@@ -1,0 +1,19 @@
+{
+  "name": "unique-suite",
+  "version": "0.1.0",
+  "description": "Obsidian community plugin: Unique + Unique Agenda in one install.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "node esbuild.config.mjs production"
+  },
+  "keywords": [
+    "obsidian-plugin",
+    "unique-suite"
+  ],
+  "author": "Benjamín Alcalde",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.25.9"
+  }
+}

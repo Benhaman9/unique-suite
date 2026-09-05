@@ -1,0 +1,58 @@
+{
+  "unique": {
+    "activeFilter": "todos",
+    "shouldConfirmBeforeCreateDaily": true,
+    "workspaceOptimized": true,
+    "lastClassPath": "",
+    "customNoteLabels": [
+      "Clase",
+      "Lectura",
+      "Módulo",
+      "Semana",
+      "Estudio",
+      "Control",
+      "Prueba"
+    ],
+    "originalCalendarOptions": {
+      "shouldConfirmBeforeCreate": true,
+      "weekStart": "locale",
+      "wordsPerDot": 100000,
+      "showWeeklyNote": false,
+      "weeklyNoteFormat": "",
+      "weeklyNoteTemplate": "",
+      "weeklyNoteFolder": "",
+      "localeOverride": "es"
+    }
+  },
+  "agenda": {
+    "eventFolder": "Sistema/Agenda/Eventos",
+    "historyPath": "Sistema/Agenda/Historial.md",
+    "remindersPath": "Sistema/Recordatorios.md",
+    "diarioFolder": "Diario",
+    "locale": "es",
+    "weekStart": 1,
+    "mostrarHorario": true,
+    "showHorario": true,
+    "showLocal": true,
+    "showGoogleClases": true,
+    "showGoogleOficial": true,
+    "showGoogleEspiritual": true,
+    "showGoogleOther": true,
+    "googleClientId": "",
+    "googleClientSecret": "",
+    "googleCalendarId": "primary",
+    "googleAccessToken": "",
+    "icsUrl": "",
+    "icsUrlClases": "",
+    "icsUrlOficial": "",
+    "icsUrlEspiritual": "",
+    "icsUrlOther": "",
+    "enableGoogleImport": false,
+    "autoSyncEnabled": false,
+    "autoSyncIntervalMinutes": 60,
+    "pruneMissingGoogle": false,
+    "lastSyncAt": "",
+    "lastSyncError": "",
+    "colorMap": {}
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "id": "unique-suite",
+  "name": "Unique Suite",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "University workspace: home, class capture, daily notes, timetable, reminders, calendar, events, ICS feeds, and layers.",
+  "author": "Benjamín Alcalde",
+  "authorUrl": "https://github.com/Benhaman9",
+  "isDesktopOnly": false
+}
