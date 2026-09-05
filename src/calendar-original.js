@@ -3814,7 +3814,19 @@ function overrideGlobalMomentWeekStart(weekStart) {
  */
 function configureGlobalMomentLocale(localeOverride = "system-default", weekStart = "locale") {
     var _a;
-    const obsidianLang = localStorage.getItem("language") || "en";
+    // Prefer Obsidian getLanguage() over reading Obsidian UI prefs from the browser (community review).
+    let obsidianLang = "en";
+    try {
+        if (typeof obsidian.getLanguage === "function") {
+            obsidianLang = obsidian.getLanguage() || "en";
+        }
+        else if (typeof obsidian__default["default"].getLanguage === "function") {
+            obsidianLang = obsidian__default["default"].getLanguage() || "en";
+        }
+    }
+    catch (_langErr) {
+        obsidianLang = "en";
+    }
     const systemLang = (_a = navigator.language) === null || _a === void 0 ? void 0 : _a.toLowerCase();
     let momentLocale = langToMomentLocale[obsidianLang];
     if (localeOverride !== "system-default") {

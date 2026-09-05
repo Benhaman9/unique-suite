@@ -1,6 +1,6 @@
 {
   "name": "unique-suite",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Obsidian community plugin: Unique + Unique Agenda in one install.",
   "main": "main.js",
   "scripts": {

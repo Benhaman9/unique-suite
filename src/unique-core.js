@@ -45,6 +45,41 @@ function normalizeSearch(value) {
     .toLocaleLowerCase("es");
 }
 
+
+/** Collect .md files under a folder tree (scoped; avoids whole-vault enumeration). */
+function collectMarkdownUnder(root, out = []) {
+  if (!root) return out;
+  if (root instanceof TFile) {
+    if (root.extension === "md") out.push(root);
+    return out;
+  }
+  if (root instanceof TFolder) {
+    for (const child of root.children) collectMarkdownUnder(child, out);
+  }
+  return out;
+}
+
+/** Scoped markdown listing for university folders only. */
+function getScopedMarkdownFiles(app, folders) {
+  const out = [];
+  const seen = new Set();
+  for (const folder of folders) {
+    const path = normalizePath(folder);
+    if (!path) continue;
+    const root = app.vault.getAbstractFileByPath(path);
+    const files = collectMarkdownUnder(root, []);
+    for (const file of files) {
+      if (seen.has(file.path)) continue;
+      seen.add(file.path);
+      out.push(file);
+    }
+  }
+  return out;
+}
+
+const UNIQUE_SCOPE_FOLDERS = ["Diario", "Semestres", "Sistema"];
+
+
 function yamlString(value) {
   return JSON.stringify(String(value ?? ""));
 }
@@ -1746,7 +1781,8 @@ class UniqueHomeView extends ItemView {
   }
 
   getRecentFiles(limit = 6) {
-    const all = [...this.app.vault.getMarkdownFiles()].sort(
+    // Scoped to Diario/Semestres/Sistema — avoids whole-vault enumeration on home open.
+    const all = [...getScopedMarkdownFiles(this.app, UNIQUE_SCOPE_FOLDERS)].sort(
       (a, b) => b.stat.mtime - a.stat.mtime
     );
     return all
@@ -1896,8 +1932,8 @@ class UniqueHomeView extends ItemView {
         resultsEl.removeClass("is-visible");
         return;
       }
-      const files = this.app.vault
-        .getMarkdownFiles()
+      // User-triggered search; still scoped to university folders.
+      const files = getScopedMarkdownFiles(this.app, UNIQUE_SCOPE_FOLDERS)
         .map((file) => {
           const name = normalizeSearch(file.basename);
           const path = normalizeSearch(file.path);
@@ -2061,12 +2097,14 @@ class UniqueCalendarView extends ItemView {
 
   async getDailyInfo() {
     const info = new Map();
-    for (const file of this.app.vault.getMarkdownFiles()) {
+    const diarioFiles = getScopedMarkdownFiles(this.app, ["Diario"]);
+    const scopedFiles = getScopedMarkdownFiles(this.app, ["Diario", "Semestres"]);
+    for (const file of diarioFiles) {
       if (this.plugin.isDailyFile(file)) {
         info.set(file.basename, { file, words: 0, tasks: 0, classes: 0 });
       }
     }
-    for (const file of this.app.vault.getMarkdownFiles()) {
+    for (const file of scopedFiles) {
       const fm = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
       const date = String(fm.fecha || "");
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
@@ -2860,8 +2898,7 @@ Esta bóveda puede funcionar con Unique sin depender de plantillas de apuntes ni
 
   // ── Semestres Helper ──
   getAllSemesters() {
-    return this.app.vault
-      .getMarkdownFiles()
+    return getScopedMarkdownFiles(this.app, ["Semestres"])
       .map((file) => {
         const fm =
           this.app.metadataCache.getFileCache(file)?.frontmatter || {};
@@ -3111,9 +3148,9 @@ tags:
       "i"
     );
 
-    const dailyFiles = this.app.vault
-      .getMarkdownFiles()
-      .filter((f) => this.isDailyFile(f));
+    const dailyFiles = getScopedMarkdownFiles(this.app, ["Diario"]).filter((f) =>
+      this.isDailyFile(f)
+    );
 
     for (const daily of dailyFiles) {
       const content = await this.app.vault.read(daily);
@@ -3131,7 +3168,7 @@ tags:
       }
     }
 
-    const allMarkdown = this.app.vault.getMarkdownFiles();
+    const allMarkdown = getScopedMarkdownFiles(this.app, ["Semestres", "Diario"]);
     for (const file of allMarkdown) {
       const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
       if (fm?.version_ia && targetLinkRegex.test(String(fm.version_ia))) {
@@ -3170,9 +3207,9 @@ tags:
 
   async cleanEmptyDailyNotes() {
     let deletedCount = 0;
-    const dailyFiles = this.app.vault
-      .getMarkdownFiles()
-      .filter((f) => this.isDailyFile(f));
+    const dailyFiles = getScopedMarkdownFiles(this.app, ["Diario"]).filter((f) =>
+      this.isDailyFile(f)
+    );
     for (const daily of dailyFiles) {
       const content = await this.app.vault.read(daily);
       if (isDailyNoteEmpty(content)) {
@@ -3501,8 +3538,7 @@ tags:
   }
 
   activePeriod() {
-    const activeSemester = this.app.vault
-      .getMarkdownFiles()
+    const activeSemester = getScopedMarkdownFiles(this.app, ["Semestres"])
       .map((file) => ({
         file,
         frontmatter: this.app.metadataCache.getFileCache(file)?.frontmatter,
@@ -3517,8 +3553,7 @@ tags:
   }
 
   statusForPeriod(period) {
-    const semester = this.app.vault
-      .getMarkdownFiles()
+    const semester = getScopedMarkdownFiles(this.app, ["Semestres"])
       .map((file) => this.app.metadataCache.getFileCache(file)?.frontmatter)
       .find(
         (frontmatter) =>
@@ -3531,8 +3566,7 @@ tags:
   }
 
   periodForDate(date) {
-    const semester = this.app.vault
-      .getMarkdownFiles()
+    const semester = getScopedMarkdownFiles(this.app, ["Semestres"])
       .map((file) => this.app.metadataCache.getFileCache(file)?.frontmatter)
       .find((frontmatter) => {
         const start = String(frontmatter?.inicio || "");

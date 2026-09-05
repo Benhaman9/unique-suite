@@ -34,6 +34,25 @@ var CATEGORIAS = ["Clase", "Lectura", "Estudio", "Control", "Prueba", "Otro"];
 var DIAS_LARGOS = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
 var DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 var MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+function collectMarkdownUnder(root, out = []) {
+  if (!root) return out;
+  if (root instanceof import_obsidian.TFile) {
+    if (root.extension === "md") out.push(root);
+    return out;
+  }
+  if (root instanceof import_obsidian.TFolder) {
+    for (const child of root.children) collectMarkdownUnder(child, out);
+  }
+  return out;
+}
+function getMarkdownInFolder(app, folderPath) {
+  const path = (0, import_obsidian.normalizePath)(folderPath || "");
+  if (!path) return [];
+  const root = app.vault.getAbstractFileByPath(path);
+  return collectMarkdownUnder(root, []);
+}
+
 var DIA_INDEX = {
   domingo: 0,
   lunes: 1,
@@ -636,10 +655,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   }
   async loadEvents() {
     const folder = (0, import_obsidian.normalizePath)(this.settings.eventFolder);
-    const files = this.app.vault.getMarkdownFiles().filter((f) => {
-      const p = f.path.replace(/\\/g, "/");
-      return p === folder + "/" + f.name || p.startsWith(folder + "/");
-    });
+    const files = getMarkdownInFolder(this.app, folder);
     const out = [];
     for (const file of files) {
       const content = await this.app.vault.cachedRead(file);
@@ -652,7 +668,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   async loadHorarioItems(rangeStart, rangeEnd) {
     var _a;
     if (!this.settings.showHorario) return [];
-    const files = this.app.vault.getMarkdownFiles().filter((f) => /horario\.md$/i.test(f.path));
+    const files = getMarkdownInFolder(this.app, "Semestres").filter((f) => /horario\.md$/i.test(f.path));
     const items = [];
     for (const file of files) {
       const content = await this.app.vault.cachedRead(file);

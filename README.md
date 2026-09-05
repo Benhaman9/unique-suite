@@ -1,7 +1,7 @@
 # Unique Suite
 
 **Plugin id:** `unique-suite`  
-**Version:** 0.1.0  
+**Version:** 0.1.2  
 **Author:** Benjamín Alcalde
 
 Un plugin de Obsidian que une en **una sola instalación** el sistema universitario Unique y Unique Agenda.

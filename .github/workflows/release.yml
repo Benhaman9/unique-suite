@@ -29,6 +29,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Extract release notes from CHANGELOG
+        run: python3 scripts/extract-release-notes.py
+
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v2
         with:
@@ -42,6 +45,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          body_path: release-notes.md
           files: |
             main.js
             manifest.json

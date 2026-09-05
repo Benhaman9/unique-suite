@@ -110,9 +110,9 @@
   line-height: 1.4;
 }
 
-.captura-clases-checkbox-row input[type="checkbox"] {
-  width: 16px !important;
-  height: 16px !important;
+.captura-clases-modal .captura-clases-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
   margin: 0;
   margin-top: 3px;
@@ -120,10 +120,10 @@
   position: relative;
 }
 
-.captura-clases-checkbox-row label {
-  margin: 0 !important;
-  padding: 0 !important;
-  font-weight: normal !important;
+.captura-clases-modal .captura-clases-checkbox-row label {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
   cursor: pointer;
   user-select: none;
   flex: 1;
@@ -253,19 +253,20 @@
 
 /* ── Ocultación limpia de delimitadores de comentarios ──── */
 
-.cm-line.captura-nav-marker-hidden,
+.markdown-source-view.mod-cm6 .cm-line.captura-nav-marker-hidden,
+.markdown-source-view .captura-nav-marker-hidden,
 .captura-nav-marker-hidden {
-  display: none !important;
-  visibility: hidden !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  height: 0 !important;
-  min-height: 0 !important;
-  max-height: 0 !important;
-  line-height: 0 !important;
-  font-size: 0 !important;
-  overflow: hidden !important;
-  border: none !important;
+  display: none;
+  visibility: hidden;
+  margin: 0;
+  padding: 0;
+  height: 0;
+  min-height: 0;
+  max-height: 0;
+  line-height: 0;
+  font-size: 0;
+  overflow: hidden;
+  border: none;
 }
 
 /* ── Dashboard Universitario en Ajustes ──────────────────── */
@@ -543,12 +544,13 @@
   height: 15px;
 }
 
-.inicio-busqueda {
+.inicio-personalizado .inicio-busqueda-bar .inicio-busqueda {
   width: 100%;
   height: 42px;
-  padding: 0 14px 0 40px !important;
-  border-radius: 8px !important;
+  padding: 0 14px 0 40px;
+  border-radius: 8px;
   font-size: 0.92rem;
+  box-sizing: border-box;
 }
 
 .inicio-resultados {
@@ -1687,9 +1689,10 @@
   flex: 1;
 }
 
-.ua-danger {
-  background: var(--background-modifier-error) !important;
-  color: var(--text-on-accent, #fff) !important;
+.ua-actions button.ua-danger,
+button.ua-danger {
+  background: var(--background-modifier-error);
+  color: var(--text-on-accent, #fff);
 }
 
 .ua-muted {
