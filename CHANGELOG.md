@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.4
+
+- **Docs:** README reescrito para quien instala desde Plugins comunitarios (instalación comunitaria primero; sin notas de revisión ni asides de desarrollo).
+
 ## 0.1.3
 
 - **Docs:** README reescrito en voz natural (español primero) para quien evalúa instalar el plugin; blurb corto en inglés.

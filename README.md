@@ -2,37 +2,34 @@
 
 Si estudias y quieres tener la universidad ordenada en Obsidian —clases, diario, horario, recordatorios y calendario— sin pelearte con tres plugins distintos, esto es para ti.
 
-**Unique Suite** junta en una sola instalación lo que yo uso en la bóveda: el sistema Unique (inicio, captura de clases, notas diarias, horario, recordatorios) y Unique Agenda (eventos con hora, vistas mes/semana, capas e importación ICS, incluido Google Calendar). Pensado para semestres, carpetas de cursos y un vault que se entiende solo.
+**Unique Suite** junta en una sola instalación lo que yo uso día a día: el sistema Unique (inicio, captura de clases, notas diarias, horario, recordatorios) y Unique Agenda (eventos con hora, vistas mes/semana, capas e importación ICS, incluido Google Calendar). Está pensado para semestres, carpetas de cursos y un vault que se entiende solo.
 
-Día a día: abres el inicio, capturas una clase, miras el horario, anotas recordatorios y ves la agenda con lo local y lo que viene de Google. Las capas te dejan mostrar u ocultar horario, eventos locales y cada feed ICS sin mezclarlo todo.
+En la práctica abres el inicio, capturas una clase, miras el horario, anotas recordatorios y ves la agenda con lo local y lo que viene de Google. Las capas te dejan mostrar u ocultar horario, eventos locales y cada feed ICS sin mezclarlo todo.
 
-> **Importante:** no lo instales junto a los plugins separados `unique` y `unique-agenda`. Duplicarías vistas, comandos y cintas. El suite los reemplaza.
+> **Importante:** no lo instales junto a los plugins separados `unique` y `unique-agenda`. Duplicarías vistas, comandos y cintas. Unique Suite los reemplaza.
 
-**Plugin id:** `unique-suite` · **Versión:** 0.1.3 · **Autor:** Benjamín Alcalde
-
----
-
-## English (short)
-
-Unique Suite is one Obsidian install for a university vault: home, class capture, daily notes, timetable, reminders, calendar/agenda, ICS feeds (e.g. Google Calendar), and layers. Do **not** run it alongside separate `unique` + `unique-agenda` plugins.
+**Autor:** Benjamín Alcalde · **Plugin id:** `unique-suite`
 
 ---
 
 ## Instalación
 
-**Desde Community Plugins** (cuando esté aprobado):
+### Desde Plugins comunitarios (recomendado)
 
-1. Ajustes → Plugins comunitarios → Explorar → busca **Unique Suite**.
-2. Instalar → Activar.
+1. Ajustes → Plugins comunitarios → Explorar.
+2. Busca **Unique Suite**.
+3. Instalar → Activar.
 
-**Desde GitHub** ([releases](https://github.com/Benhaman9/unique-suite/releases)):
+### Desde GitHub (manual)
 
-1. Crea `<bóveda>/.obsidian/plugins/unique-suite/`.
-2. Baja del release solo `main.js`, `manifest.json` y `styles.css` (Obsidian no instala el resto del repo).
+Si prefieres instalar a mano desde los [releases](https://github.com/Benhaman9/unique-suite/releases):
+
+1. Crea la carpeta `<bóveda>/.obsidian/plugins/unique-suite/`.
+2. Baja del release solo `main.js`, `manifest.json` y `styles.css` (Obsidian no usa el resto del repo).
 3. Activa **Unique Suite** en Plugins comunitarios.
 4. Recarga Obsidian si hace falta.
 
-`main.js` ya trae Unique, Agenda y el calendario embebido. No copies `unique-core.js` ni `calendar-original.js` a la carpeta del plugin.
+El `main.js` ya trae Unique, Agenda y el calendario embebido. No hace falta copiar otros archivos del repositorio a la carpeta del plugin.
 
 ---
 
@@ -50,7 +47,7 @@ Puedes crear las carpetas a mano o usar el comando **Preparar bóveda universita
 | `Sistema/Recordatorios.md` | Tabla de recordatorios |
 | Nota `Horario` (`tipo: horario`, `estado: activo`) | Bloques de horario (solo lectura en Agenda) |
 
-Si usas otros nombres, ajústalos en Ajustes → Unique / Unique Agenda. Por defecto Agenda mira: `Sistema/Agenda/Eventos`, `Sistema/Agenda/Historial.md`, `Sistema/Recordatorios.md`, `Diario`.
+Si usas otros nombres, ajústalos en Ajustes → Unique / Unique Agenda. Por defecto Agenda mira: `Sistema/Agenda/Eventos`, `Sistema/Agenda/Historial.md`, `Sistema/Recordatorios.md` y `Diario`.
 
 ---
 
@@ -61,9 +58,9 @@ Si usas otros nombres, ajústalos en Ajustes → Unique / Unique Agenda. Por def
 3. Activa **auto-sync** si quieres sync periódica mientras Obsidian está abierto.
 4. O usa el comando **Importar desde Google Calendar** para un sync manual.
 
-Las capas (horario, local, cada feed Google) se controlan desde la vista Agenda y/o ajustes.
+Las capas (horario, local, cada feed Google) se controlan desde la vista Agenda y/o desde los ajustes.
 
-**No subas** `data.json` con URLs secretas ICS ni tokens a un repo público. Usa `data.json.example` como plantilla; ese archivo no viene en el release comunitario.
+**Cuidado:** no subas a un repo público un `data.json` con URLs secretas ICS ni tokens. Si quieres una plantilla, mira `data.json.example` en el repositorio (ese archivo no viene en la instalación comunitaria).
 
 ---
 
@@ -78,22 +75,9 @@ Unique Suite guarda un solo `data.json` con dos bloques:
 }
 ```
 
-Si vienes de los plugins separados, copia cada `data.json` vivo a su bloque (sin secretos si vas a compartir). El comando que antes llamaba `unique-agenda:abrir` ahora es `unique-suite:abrir`.
-
-| Plugin | Rol |
-|--------|-----|
-| `unique` + `unique-agenda` | Separados (bóveda live). No usar junto al suite. |
-| **unique-suite** | Esta instalación única para community / otro dispositivo. |
+Si vienes de los plugins separados, copia el contenido de cada `data.json` a su bloque correspondiente (sin secretos si vas a compartir la bóveda). El comando que antes era `unique-agenda:abrir` ahora es `unique-suite:abrir`.
 
 El calendario de notas diarias se basa en Obsidian Calendar de Liam Cain (MIT). Ver `NOTICE`.
-
----
-
-## Desarrollo
-
-Instala dependencias y corre el script `build` de `package.json`. Eso escribe `main.js` (bundle único) y copia `main.js`, `manifest.json` y `styles.css` a `release/` para el GitHub Release.
-
-Obsidian community solo descarga esos tres archivos; el orquestador y los cores viven en `src/`.
 
 ---
 
@@ -101,3 +85,13 @@ Obsidian community solo descarga esos tres archivos; el orquestador y los cores 
 
 MIT © 2026 Benjamín Alcalde.
 Incluye código basado en Obsidian Calendar de Liam Cain (MIT, 2021). Ver `LICENSE` y `NOTICE`.
+
+---
+
+## English (short)
+
+Unique Suite is one Obsidian install for a university vault: home, class capture, daily notes, timetable, reminders, calendar/agenda, ICS feeds (e.g. Google Calendar), and layers.
+
+**Install:** Settings → Community plugins → Browse → **Unique Suite** → Install → Enable. Or download `main.js`, `manifest.json`, and `styles.css` from [GitHub Releases](https://github.com/Benhaman9/unique-suite/releases) into `.obsidian/plugins/unique-suite/`.
+
+Do **not** run it alongside the separate `unique` and `unique-agenda` plugins — Unique Suite replaces them.
