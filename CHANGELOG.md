@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.3
+
+- **Docs:** README reescrito en voz natural (español primero) para quien evalúa instalar el plugin; blurb corto en inglés.
+- **manifest:** descripción comunitaria más clara y alineada al tono del README.
+
 ## 0.1.2
 
 Community review hardening and release hygiene:
