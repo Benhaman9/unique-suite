@@ -1,6 +1,6 @@
 # Unique Suite
 
-Si estudias y quieres tener la universidad ordenada en Obsidian —clases, diario, horario, recordatorios y calendario— sin pelearte con tres plugins distintos, esto es para ti.
+Si estudias y quieres tener la universidad ordenada —clases, diario, horario, recordatorios y calendario— sin pelearte con tres plugins distintos, esto es para ti.
 
 **Unique Suite** junta en una sola instalación lo que yo uso día a día: el sistema Unique (inicio, captura de clases, notas diarias, horario, recordatorios) y Unique Agenda (eventos con hora, vistas mes/semana, capas e importación ICS, incluido Google Calendar). Está pensado para semestres, carpetas de cursos y un vault que se entiende solo.
 
