@@ -78,6 +78,36 @@ function getScopedMarkdownFiles(app, folders) {
 }
 
 const UNIQUE_SCOPE_FOLDERS = ["Diario", "Semestres", "Sistema"];
+const WELCOME_NOTE_PATH = "00 Inicio/Guia de inicio.md";
+const QUICK_CAPTURE_FOLDER = "Sistema/Capturas rápidas";
+const WELCOME_NOTE_CONTENT = `# Bienvenido a Unique Suite / Welcome to Unique Suite
+
+## Español
+
+Todavía no hay un semestre activo. Unique Suite no creará uno por ti.
+
+1. Abre **US-Core** en Ajustes.
+2. En **Semestres**, elige **+ Crear Semestre**.
+3. Define el período y las fechas, y déjalo como **activo**.
+4. Agrega tus ramos y vuelve a Inicio.
+
+Cuando cierres un semestre, crea y activa el siguiente desde **US-Core**. Mientras no haya uno activo, esta guía reemplaza el Inicio personalizado.
+
+Para ver solo la estructura académica en la vista de grafo, usa el filtro: \`path:Semestres\`.
+
+## English
+
+There is no active semester yet. Unique Suite will not create one for you.
+
+1. Open **US-Core** in Settings.
+2. Under **Semesters**, choose **+ Create semester**.
+3. Set the term and dates, then mark it as **active**.
+4. Add your courses and return to Home.
+
+When a semester ends, create and activate the next one from **US-Core**. Until a semester is active, this guide replaces the custom Home view.
+
+To show only the academic structure in Graph view, use this filter: \`path:Semestres\`.
+`;
 
 
 function yamlString(value) {
@@ -738,6 +768,7 @@ class ClassDetailsModal extends Modal {
 
   renderForm() {
     const { contentEl } = this;
+    const t = (value) => this.plugin.translate?.(value) || value;
     contentEl.empty();
     contentEl.addClass("captura-clases-modal");
     contentEl.createEl("h2", { text: this.course.name, cls: "modal-title" });
@@ -774,9 +805,9 @@ class ClassDetailsModal extends Modal {
     };
 
     const typeField = form.createDiv({ cls: "captura-clases-campo" });
-    typeField.createEl("label", { text: "Tipo de apunte" });
+    typeField.createEl("label", { text: t("Tipo de apunte") });
     typeField.createEl("small", {
-      text: "Selecciona o añade un tipo predeterminado.",
+      text: t("Selecciona o añade un tipo predeterminado."),
     });
     const typeButtons = typeField.createDiv({ cls: "captura-clases-opciones" });
 
@@ -785,7 +816,7 @@ class ClassDetailsModal extends Modal {
 
       this.labelsList.forEach((option) => {
         const btn = typeButtons.createEl("button", {
-          text: option,
+          text: t(option),
           cls: `captura-clases-opcion${
             this.noteLabelKind === option ? " is-selected" : ""
           }`,
@@ -805,7 +836,7 @@ class ClassDetailsModal extends Modal {
       });
 
       const btnOtro = typeButtons.createEl("button", {
-        text: "Otro",
+        text: t("Otro"),
         cls: `captura-clases-opcion${
           this.noteLabelKind === "Otro" ? " is-selected" : ""
         }`,
@@ -831,14 +862,14 @@ class ClassDetailsModal extends Modal {
       if (this.noteLabelKind !== "Otro") return;
 
       customLabelField = form.createDiv({ cls: "captura-clases-campo" });
-      customLabelField.createEl("label", { text: "Nombre del apunte" });
+      customLabelField.createEl("label", { text: t("Nombre del apunte") });
       customLabelField.createEl("small", {
-        text: "Ej. Taller, Laboratorio, Ayudantía, Control.",
+        text: t("Ej. Taller, Laboratorio, Ayudantía, Control."),
       });
       customLabelInput = customLabelField.createEl("input", {
         attr: {
           type: "text",
-          placeholder: "Ej. Taller",
+          placeholder: t("Ej. Taller"),
           autocomplete: "off",
           spellcheck: "false",
           style: "width: 260px; max-width: 100%;"
@@ -867,7 +898,7 @@ class ClassDetailsModal extends Modal {
       });
       checkRow.createEl("label", {
         attr: { for: "guardar-predeterminado" },
-        text: "Guardar este tipo como predeterminado para el futuro",
+        text: t("Guardar este tipo como predeterminado para el futuro"),
       });
 
       customLabelInput.addEventListener("keydown", submitOnEnter);
@@ -875,18 +906,18 @@ class ClassDetailsModal extends Modal {
     };
 
     const topicInput = createField({
-      label: "Nombre o tema (opcional)",
-      description: "Tema específico del apunte.",
+      label: t("Nombre o tema (opcional)"),
+      description: t("Tema específico del apunte."),
       value: this.topic,
-      placeholder: "Ej. Introducción al curso",
+      placeholder: t("Ej. Introducción al curso"),
       onInput: (value) => {
         this.topic = value;
       },
     });
 
     const numberInput = createField({
-      label: "Número",
-      description: "Correlativo automático por serie.",
+      label: t("Número"),
+      description: t("Correlativo automático por serie."),
       value: this.number,
       placeholder: "1",
       onInput: (value) => {
@@ -895,9 +926,8 @@ class ClassDetailsModal extends Modal {
     });
 
     const aiInput = createField({
-      label: "IA usada (opcional)",
-      description:
-        "Si fue desarrollado con IA (ChatGPT, Claude, Gemini, etc.).",
+      label: t("IA usada (opcional)"),
+      description: t("Si fue desarrollado con IA (ChatGPT, Claude, Gemini, etc.)."),
       value: this.aiSource,
       placeholder: "Ej. Claude",
       onInput: (value) => {
@@ -906,10 +936,10 @@ class ClassDetailsModal extends Modal {
     });
 
     const actions = contentEl.createDiv({ cls: "captura-clases-acciones" });
-    const cancel = actions.createEl("button", { text: "Cancelar" });
+    const cancel = actions.createEl("button", { text: t("Cancelar") });
     cancel.addEventListener("click", () => this.close());
     const create = actions.createEl("button", {
-      text: "Crear apunte",
+      text: t("Crear apunte"),
       cls: "mod-cta",
     });
     create.addEventListener("click", () => this.submit());
@@ -1076,7 +1106,9 @@ class QuickCaptureModal extends Modal {
       cls: "modal-title",
     });
     contentEl.createEl("p", {
-      text: `Destino: ${this.targetFile.basename}`,
+      text: this.targetFile
+        ? `${this.plugin.translate("Destino")}: ${this.targetFile.basename}`
+        : `${this.plugin.translate("Destino")}: ${this.plugin.translate(QUICK_CAPTURE_FOLDER)}`,
       cls: "captura-clases-contexto",
     });
 
@@ -1110,7 +1142,9 @@ class QuickCaptureModal extends Modal {
     const field = contentEl.createDiv({ cls: "captura-clases-campo" });
     field.createEl("label", { text: "Idea, duda o pendiente" });
     field.createEl("small", {
-      text: "Se añadirá al apunte con la hora actual.",
+      text: this.plugin.translate(this.targetFile
+        ? "Se añadirá al apunte con la hora actual."
+        : "Se guardará como una nota independiente."),
     });
     const input = field.createEl("textarea", {
       cls: "captura-rapida-textarea",
@@ -1131,11 +1165,15 @@ class QuickCaptureModal extends Modal {
     const submit = async () => {
       const text = input.value.trim();
       if (!text) {
-        new Notice("Escribe algo para guardar la captura.", 4000);
+        new Notice(this.plugin.translate("Escribe algo para guardar la captura."), 4000);
         return;
       }
       save.disabled = true;
-      await this.plugin.appendQuickCapture(this.targetFile, text, this.kind);
+      if (this.targetFile) {
+        await this.plugin.appendQuickCapture(this.targetFile, text, this.kind);
+      } else {
+        await this.plugin.createQuickCapture(text, this.kind);
+      }
       this.close();
     };
 
@@ -1291,8 +1329,16 @@ class CreateCourseModal extends Modal {
       if (prefixInput) prefixInput.setValue(this.prefix);
     };
 
-    new Setting(form).setName("Nombre del ramo").addText((t) => {
+    let save = null;
+    const updateSaveState = () => {
+      if (!save) return;
+      save.disabled = !this.name.trim() || !this.professor.trim();
+    };
+
+    new Setting(form).setName("Nombre del ramo *").addText((t) => {
       t.setPlaceholder("Ej. Econometría I");
+      t.inputEl.required = true;
+      t.inputEl.setAttribute("aria-required", "true");
       t.onChange((v) => {
         this.name = v;
         if (!this.siglaRamo) {
@@ -1300,11 +1346,14 @@ class CreateCourseModal extends Modal {
           this.siglaRamo = words.map((w) => w[0]?.toUpperCase()).join("").slice(0, 3);
           updatePrefix();
         }
+        updateSaveState();
       });
     });
 
-    new Setting(form).setName("Nombre del profesor").addText((t) => {
+    new Setting(form).setName("Nombre del profesor *").addText((t) => {
       t.setPlaceholder("Ej. Rodrigo Fuentes");
+      t.inputEl.required = true;
+      t.inputEl.setAttribute("aria-required", "true");
       t.onChange((v) => {
         this.professor = v;
         if (!this.siglaProfesor) {
@@ -1312,6 +1361,7 @@ class CreateCourseModal extends Modal {
           this.siglaProfesor = words.map((w) => w[0]?.toUpperCase()).join("").slice(0, 2);
           updatePrefix();
         }
+        updateSaveState();
       });
     });
 
@@ -1344,10 +1394,11 @@ class CreateCourseModal extends Modal {
     const actions = contentEl.createDiv({ cls: "captura-clases-acciones" });
     const cancel = actions.createEl("button", { text: "Cancelar" });
     cancel.addEventListener("click", () => this.close());
-    const save = actions.createEl("button", {
+    save = actions.createEl("button", {
       text: "Crear ramo",
       cls: "mod-cta",
     });
+    updateSaveState();
     save.addEventListener("click", async () => {
       if (!this.name.trim() || !this.professor.trim() || !this.prefix.trim()) {
         new Notice("Por favor completa el nombre, profesor y prefijo.", 5000);
@@ -1567,7 +1618,9 @@ class UniversitySettingsTab extends PluginSettingTab {
     const typesContainer = containerEl.createDiv({
       cls: "captura-types-container",
     });
-    this.renderTypesManager(typesContainer);
+    this.renderTypesManager(typesContainer).then(() => {
+      this.plugin.localizeSettings?.(containerEl);
+    });
 
     // ── 4. HERRAMIENTAS Y MANTENIMIENTO ──
     containerEl.createDiv({ cls: "captura-dashboard-divider" });
@@ -1631,6 +1684,8 @@ class UniversitySettingsTab extends PluginSettingTab {
           this.display();
         });
       });
+
+    this.plugin.localizeSettings?.(containerEl);
   }
 
   async renderTypesManager(container) {
@@ -1713,15 +1768,22 @@ function relativeDate(mtime) {
   return moment(mtime).locale("es").format("D MMM");
 }
 
-function greeting() {
+function greeting(language = "es") {
   const h = new Date().getHours();
+  if (language === "en") {
+    if (h < 12) return "Good morning";
+    if (h < 19) return "Good afternoon";
+    return "Good evening";
+  }
   if (h < 12) return "Buenos días";
   if (h < 19) return "Buenas tardes";
   return "Buenas noches";
 }
 
-function todayLabel() {
-  const raw = moment().locale("es").format("dddd, D [de] MMMM [de] YYYY");
+function todayLabel(language = "es") {
+  const raw = language === "en"
+    ? moment().locale("en").format("dddd, MMMM D, YYYY")
+    : moment().locale("es").format("dddd, D [de] MMMM [de] YYYY");
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
@@ -1739,6 +1801,9 @@ function noteTypeInfo(file, app) {
   }
   if (tipo === "diario" || file.path.startsWith("Diario/")) {
     return { kind: "diario", label: "Diario", icon: "calendar" };
+  }
+  if (tipo === "captura-rapida" || file.path.startsWith(`${QUICK_CAPTURE_FOLDER}/`)) {
+    return { kind: "nota", label: "Captura rápida", icon: "zap" };
   }
   if (tipo === "indice-ramo") return { kind: "indice", label: "Índice", icon: "folder" };
   if (tipo === "semestre") return { kind: "indice", label: "Semestre", icon: "graduation-cap" };
@@ -1759,7 +1824,7 @@ class UniqueHomeView extends ItemView {
   }
 
   getDisplayText() {
-    return "Inicio";
+    return this.plugin.getLanguage?.() === "en" ? "Home" : "Inicio";
   }
 
   getIcon() {
@@ -1780,27 +1845,28 @@ class UniqueHomeView extends ItemView {
     this.app.workspace.setActiveLeaf(this.leaf, { focus: true });
   }
 
+  matchesFilter(file) {
+    const fm = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+    const tipo = String(fm.tipo || "").toLowerCase();
+    const cssClasses = Array.isArray(fm.cssclasses) ? fm.cssclasses : [];
+    if (this.activeFilter === "apuntes") {
+      if (tipo === "indice-ramo" || tipo === "semestre" || tipo === "diario") return false;
+      if (file.path.startsWith("Diario/")) return false;
+      return tipo === "clase" || cssClasses.includes("apunte") || !!fm.etiqueta_apunte;
+    }
+    if (this.activeFilter === "diarios") return tipo === "diario" || file.path.startsWith("Diario/");
+    if (this.activeFilter === "indices") return tipo === "indice-ramo" || tipo === "semestre";
+    if (this.activeFilter === "capturas") return tipo === "captura-rapida" || file.path.startsWith(`${QUICK_CAPTURE_FOLDER}/`);
+    return true;
+  }
+
   getRecentFiles(limit = 6) {
     // Scoped to Diario/Semestres/Sistema — avoids whole-vault enumeration on home open.
     const all = [...getScopedMarkdownFiles(this.app, UNIQUE_SCOPE_FOLDERS)].sort(
       (a, b) => b.stat.mtime - a.stat.mtime
     );
     return all
-      .filter((file) => {
-        const fm = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
-        const tipo = String(fm.tipo || "").toLowerCase();
-        const cssClasses = Array.isArray(fm.cssclasses) ? fm.cssclasses : [];
-        if (this.activeFilter === "apuntes") {
-          if (tipo === "indice-ramo" || tipo === "semestre" || tipo === "diario") {
-            return false;
-          }
-          if (file.path.startsWith("Diario/")) return false;
-          return tipo === "clase" || cssClasses.includes("apunte") || !!fm.etiqueta_apunte;
-        }
-        if (this.activeFilter === "diarios") return tipo === "diario" || file.path.startsWith("Diario/");
-        if (this.activeFilter === "indices") return tipo === "indice-ramo" || tipo === "semestre";
-        return true;
-      })
+      .filter((file) => this.matchesFilter(file))
       .slice(0, limit);
   }
 
@@ -1825,8 +1891,9 @@ class UniqueHomeView extends ItemView {
     const shell = contentEl.createDiv({ cls: "inicio-personalizado-shell" });
 
     const heading = shell.createDiv({ cls: "inicio-personalizado-heading" });
-    heading.createEl("h1", { text: greeting(), cls: "inicio-saludo" });
-    heading.createEl("p", { text: todayLabel(), cls: "inicio-personalizado-subtitle" });
+    const language = this.plugin.getLanguage?.() || "es";
+    heading.createEl("h1", { text: greeting(language), cls: "inicio-saludo" });
+    heading.createEl("p", { text: todayLabel(language), cls: "inicio-personalizado-subtitle" });
 
     const searchWrap = shell.createDiv({ cls: "inicio-busqueda-wrap" });
     const searchBar = searchWrap.createDiv({ cls: "inicio-busqueda-bar" });
@@ -1849,6 +1916,7 @@ class UniqueHomeView extends ItemView {
       { id: "apuntes", label: "Apuntes" },
       { id: "diarios", label: "Diario" },
       { id: "indices", label: "Índices" },
+      { id: "capturas", label: "Capturas" },
     ];
     filterOptions.forEach((opt) => {
       const filterBtn = filtersWrap.createEl("button", {
@@ -1867,8 +1935,8 @@ class UniqueHomeView extends ItemView {
     const resultsEl = shell.createDiv({ cls: "inicio-resultados" });
     const actionsRow = shell.createDiv({ cls: "inicio-acciones-row" });
     this.createAction(actionsRow, "notebook-pen", "Nuevo apunte", () => this.plugin.startClassCapture(), true);
-    this.createAction(actionsRow, "zap", "Captura rápida", () => this.plugin.openQuickCapture(), true);
-    this.createAction(actionsRow, "calendar-days", "Calendario", () => this.app.commands.executeCommandById((this.manifest && this.manifest.id ? this.manifest.id : "unique") + ":abrir"));
+    this.createAction(actionsRow, "zap", "Captura rápida", () => this.plugin.openQuickCaptureInbox(), true);
+    this.createAction(actionsRow, "calendar-days", "Calendario", () => this.plugin._suiteHost?.agenda?.activateView?.());
     this.createAction(actionsRow, "calendar", "Diario de hoy", () => this.plugin.openDate(moment().format("YYYY-MM-DD")));
     this.createAction(actionsRow, "history", "Último apunte", () => this.plugin.reopenLastClass());
     this.createAction(actionsRow, "layout-dashboard", "Panel", () => new DashboardModal(this.plugin).open());
@@ -1917,7 +1985,10 @@ class UniqueHomeView extends ItemView {
         text: typeInfo.label,
       });
       if (file.parent?.path) {
-        meta.createSpan({ cls: "inicio-item-folder", text: file.parent.path });
+        meta.createSpan({
+          cls: "inicio-item-folder",
+          text: this.plugin.translatePath?.(file.parent.path) || file.parent.path,
+        });
       }
       const rightMeta = btn.createDiv({ cls: "inicio-item-right" });
       rightMeta.createSpan({ cls: "inicio-item-fecha", text: relativeDate(file.stat.mtime) });
@@ -1934,6 +2005,7 @@ class UniqueHomeView extends ItemView {
       }
       // User-triggered search; still scoped to university folders.
       const files = getScopedMarkdownFiles(this.app, UNIQUE_SCOPE_FOLDERS)
+        .filter((file) => this.matchesFilter(file))
         .map((file) => {
           const name = normalizeSearch(file.basename);
           const path = normalizeSearch(file.path);
@@ -1953,7 +2025,23 @@ class UniqueHomeView extends ItemView {
         resultsEl.createDiv({ text: "No se encontraron notas.", cls: "inicio-sin-resultados" });
         return;
       }
-      this.results.forEach((file) => createNoteItem(resultsEl, file, true));
+      this.selectedIndex = Math.min(this.selectedIndex, this.results.length - 1);
+      this.results.forEach((file, index) => {
+        const button = createNoteItem(resultsEl, file, true);
+        button.toggleClass("is-selected", index === this.selectedIndex);
+        button.addEventListener("mouseenter", () => {
+          this.selectedIndex = index;
+          updateResultSelection();
+        });
+      });
+    };
+
+    const updateResultSelection = () => {
+      resultsEl.querySelectorAll(".inicio-resultado").forEach((element, index) => {
+        const selected = index === this.selectedIndex;
+        element.toggleClass("is-selected", selected);
+        if (selected) element.scrollIntoView({ block: "nearest" });
+      });
     };
 
     const renderRecent = () => {
@@ -1966,13 +2054,25 @@ class UniqueHomeView extends ItemView {
       files.forEach((file) => createNoteItem(recentEl, file));
     };
 
-    search.addEventListener("input", renderResults);
+    search.addEventListener("input", () => {
+      this.selectedIndex = 0;
+      renderResults();
+    });
     search.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" && this.results[0]) {
+      if (event.key === "ArrowDown" && this.results.length) {
         event.preventDefault();
-        this.openFile(this.results[0]);
+        this.selectedIndex = (this.selectedIndex + 1) % this.results.length;
+        updateResultSelection();
+      } else if (event.key === "ArrowUp" && this.results.length) {
+        event.preventDefault();
+        this.selectedIndex = (this.selectedIndex - 1 + this.results.length) % this.results.length;
+        updateResultSelection();
+      } else if (event.key === "Enter" && this.results[this.selectedIndex]) {
+        event.preventDefault();
+        this.openFile(this.results[this.selectedIndex]);
       } else if (event.key === "Escape") {
         search.value = "";
+        this.selectedIndex = 0;
         renderResults();
       }
     });
@@ -2450,24 +2550,20 @@ module.exports = class UniquePlugin extends Plugin {
     );
 
     this.app.workspace.onLayoutReady(() => {
-      this.rememberMainContentLeaf(this.app.workspace.activeLeaf);
-      this.ensureVaultReady({ quiet: true })
-        .then(() => {
-          this.openHomeForActiveEmptyLeaf();
-          this.openIfEmpty();
-          return this.optimizeWorkspaceOnce();
-        })
-        .then(() => {
-          this.scheduleCalendarPrune();
-          const calendarLeaf = this.pruneDuplicateCalendarViews();
-          if (!calendarLeaf) {
-            return this.activateCalendarView();
-          }
-        })
-        .catch((error) => {
-          console.error("No se pudo preparar la bóveda:", error);
-        });
+      this.openInitialView().catch((error) => {
+        console.error("No se pudo preparar la bóveda:", error);
+      });
     });
+
+    // Some Obsidian sessions finish restoring the layout before a community
+    // plugin registers its callback. Repeat the initial routing once after load.
+    this.registerInterval(
+      window.setTimeout(() => {
+        this.openInitialView().catch((error) => {
+          console.error("No se pudo abrir la vista inicial de Unique:", error);
+        });
+      }, 500)
+    );
 
     this.registerInterval(
       window.setInterval(() => {
@@ -2525,6 +2621,11 @@ module.exports = class UniquePlugin extends Plugin {
       legacyOptions,
       storedOptions
     );
+    options.localeOverride = this.getLanguage() === "en" ? "en" : "es";
+    const agendaWeekStart = this._suiteHost?.agenda?.settings?.weekStart;
+    if (agendaWeekStart === 0 || agendaWeekStart === 1) {
+      options.weekStart = agendaWeekStart === 1 ? "monday" : "sunday";
+    }
     options.shouldConfirmBeforeCreate =
       this.settings.shouldConfirmBeforeCreateDaily !== false;
     originalCalendarSettings.update((old) => Object.assign({}, old, options));
@@ -2532,7 +2633,31 @@ module.exports = class UniquePlugin extends Plugin {
     await this.saveData(this.settings);
   }
 
+  async syncSuiteLanguage() {
+    await this.loadOriginalCalendarOptions();
+  }
+
+  async openInitialView() {
+    this.rememberMainContentLeaf(this.app.workspace.activeLeaf);
+    if (!this.activePeriod()) {
+      const calendarLeaf = this.pruneDuplicateCalendarViews();
+      if (!calendarLeaf) await this.activateCalendarView();
+      await this.openWelcomeNote(this.getMainContentLeaf());
+      return;
+    }
+    this.openHomeForActiveEmptyLeaf();
+    this.openIfEmpty();
+    await this.optimizeWorkspaceOnce();
+    this.scheduleCalendarPrune();
+    const calendarLeaf = this.pruneDuplicateCalendarViews();
+    if (!calendarLeaf) await this.activateCalendarView();
+  }
+
   async activateHomeView(targetLeaf = null) {
+    if (!this.activePeriod()) {
+      await this.openWelcomeNote(targetLeaf);
+      return;
+    }
     let leaf = null;
     if (this.isMainContentLeaf(targetLeaf)) {
       leaf = targetLeaf;
@@ -2553,6 +2678,26 @@ module.exports = class UniquePlugin extends Plugin {
       leaf = this.app.workspace.getLeaf("tab");
     }
     await leaf.setViewState({ type: VIEW_TYPE_HOME, active: true });
+    this.app.workspace.revealLeaf(leaf);
+  }
+
+  async ensureWelcomeNote() {
+    let file = this.app.vault.getAbstractFileByPath(WELCOME_NOTE_PATH);
+    if (!(file instanceof TFile)) {
+      await this.ensureFolder("00 Inicio");
+      file = await this.app.vault.create(WELCOME_NOTE_PATH, WELCOME_NOTE_CONTENT);
+    }
+    return file;
+  }
+
+  async openWelcomeNote(targetLeaf = null) {
+    const file = await this.ensureWelcomeNote();
+    let leaf = this.isMainContentLeaf(targetLeaf) ? targetLeaf : null;
+    if (!leaf && this.isMainContentLeaf(this.app.workspace.activeLeaf)) {
+      leaf = this.app.workspace.activeLeaf;
+    }
+    if (!leaf) leaf = this.getMainContentLeaf();
+    await leaf.openFile(file, { active: true });
     this.app.workspace.revealLeaf(leaf);
   }
 
@@ -2621,13 +2766,14 @@ module.exports = class UniquePlugin extends Plugin {
   openIfEmpty() {
     let hasRealContent = false;
     this.app.workspace.iterateAllLeaves((leaf) => {
+      if (!this.isMainContentLeaf(leaf)) return;
       const type = leaf.getViewState().type;
       if (type && type !== "empty" && type !== VIEW_TYPE_HOME && type !== VIEW_TYPE_CALENDAR) {
         hasRealContent = true;
       }
     });
     if (!hasRealContent) {
-      this.activateHomeView(this.app.workspace.activeLeaf);
+      this.activateHomeView(this.getMainContentLeaf());
     }
   }
 
@@ -2752,8 +2898,14 @@ module.exports = class UniquePlugin extends Plugin {
                 text === "%% /navegacion-clase %%" ||
                 text === "<!-- navegacion-clase -->" ||
                 text === "<!-- /navegacion-clase -->" ||
+                text === "%% clases-automaticas %%" ||
+                text === "%% /clases-automaticas %%" ||
+                text === "<!-- clases-automaticas -->" ||
+                text === "<!-- /clases-automaticas -->" ||
                 text.startsWith("%% navegacion-clase") ||
-                text.startsWith("%% /navegacion-clase")
+                text.startsWith("%% /navegacion-clase") ||
+                text.startsWith("%% clases-automaticas") ||
+                text.startsWith("%% /clases-automaticas")
               ) {
                 builder.add(line.from, line.from, hiddenLineDeco);
               }
@@ -2773,7 +2925,7 @@ module.exports = class UniquePlugin extends Plugin {
     comments.forEach((node) => {
       const text = node.textContent || "";
       if (
-        text.includes("navegacion-clase") &&
+        (text.includes("navegacion-clase") || text.includes("clases-automaticas")) &&
         (text.includes("%%") || text.includes("<!--"))
       ) {
         node.addClass("captura-nav-marker-hidden");
@@ -2813,21 +2965,6 @@ module.exports = class UniquePlugin extends Plugin {
         await this.ensureFolder(folder);
         created.push(folder);
       }
-    }
-
-    const today = moment().format("YYYY-MM-DD");
-    const currentPeriod = this.periodForDate(today);
-    if (!this.getAllSemesters().length) {
-      const year = Number(currentPeriod.slice(0, 4));
-      const periodNum = Number(currentPeriod.slice(-1));
-      await this.createSemesterStructure({
-        period: currentPeriod,
-        startDate: periodNum === 1 ? `${year}-03-01` : `${year}-08-01`,
-        endDate: periodNum === 1 ? `${year}-07-15` : `${year}-12-15`,
-        setAsActive: true,
-        quiet: true,
-      });
-      created.push(`Semestres/${currentPeriod}`);
     }
 
     const dailyTemplate = `---
@@ -2937,6 +3074,7 @@ Esta bóveda puede funcionar con Unique sin depender de plantillas de apuntes ni
     setAsActive,
     quiet = false,
   }) {
+    const english = this.getLanguage?.() === "en";
     await this.ensureFolder(`Semestres/${period}/Cursos`);
 
     // 1. Archivo de Horario
@@ -2952,18 +3090,18 @@ tags:
   - tipo/horario
 ---
 
-# Horario — ${period}
+# ${english ? "Schedule" : "Horario"} — ${period}
 
-| Día | Inicio | Fin | Ramo | Sala |
+| ${english ? "Day" : "Día"} | ${english ? "Start" : "Inicio"} | ${english ? "End" : "Fin"} | ${english ? "Course" : "Ramo"} | ${english ? "Room" : "Sala"} |
 |---|---|---|---|---|
-| Lunes | 08:30 | 09:50 | Ramo Ejemplo | Sala 101 |
-| Miércoles | 08:30 | 09:50 | Ramo Ejemplo | Sala 101 |
+| ${english ? "Monday" : "Lunes"} | 08:30 | 09:50 | ${english ? "Example course" : "Ramo Ejemplo"} | ${english ? "Room 101" : "Sala 101"} |
+| ${english ? "Wednesday" : "Miércoles"} | 08:30 | 09:50 | ${english ? "Example course" : "Ramo Ejemplo"} | ${english ? "Room 101" : "Sala 101"} |
 `;
       await this.app.vault.create(horarioPath, horarioContent);
     }
 
     // 2. Archivo del Semestre
-    const semPath = `Semestres/${period}/Semestre - ${period}.md`;
+    const semPath = `Semestres/${period}/${english ? "Semester" : "Semestre"} - ${period}.md`;
     if (!this.app.vault.getAbstractFileByPath(semPath)) {
       const semContent = `---
 periodo: ${period}
@@ -2977,12 +3115,12 @@ tags:
   - tipo/semestre
 ---
 
-# Semestre ${period}
+# ${english ? "Semester" : "Semestre"} ${period}
 
-## Resumen del Semestre
-- **Inicio:** ${startDate}
-- **Término:** ${endDate}
-- **Estado:** ${setAsActive ? "Activo" : "Archivado"}
+## ${english ? "Semester summary" : "Resumen del Semestre"}
+- **${english ? "Start" : "Inicio"}:** ${startDate}
+- **${english ? "End" : "Término"}:** ${endDate}
+- **${english ? "Status" : "Estado"}:** ${setAsActive ? (english ? "Active" : "Activo") : (english ? "Archived" : "Archivado")}
 `;
       await this.app.vault.create(semPath, semContent);
     }
@@ -3004,11 +3142,13 @@ tags:
     siglaProfesor,
     prefix,
   }) {
+    const english = this.getLanguage?.() === "en";
     const courseFolder = `Semestres/${period}/Cursos/${name}`;
     await this.ensureFolder(courseFolder);
 
-    const indexPath = `${courseFolder}/Índice - ${name} - ${period}.md`;
-    if (!this.app.vault.getAbstractFileByPath(indexPath)) {
+    const indexPath = `${courseFolder}/${english ? "Index" : "Índice"} - ${name} - ${period}.md`;
+    let indexFile = this.app.vault.getAbstractFileByPath(indexPath);
+    if (!(indexFile instanceof TFile)) {
       const indexContent = `---
 periodo: ${period}
 ramo: ${yamlString(name)}
@@ -3026,19 +3166,21 @@ tags:
 
 # ${name}
 
-**Profesor:** ${professor}  
-**Sigla del ramo:** \`${siglaRamo}\`  
-**Sigla del profesor:** \`${siglaProfesor}\`  
-**Prefijo de los apuntes:** \`${prefix}\`
+**${english ? "Professor" : "Profesor"}:** ${professor}<br>
+**${english ? "Course abbreviation" : "Sigla del ramo"}:** \`${siglaRamo}\`<br>
+**${english ? "Professor abbreviation" : "Sigla del profesor"}:** \`${siglaProfesor}\`<br>
+**${english ? "Note prefix" : "Prefijo de los apuntes"}:** \`${prefix}\`
 
-## Apuntes
+## ${english ? "Notes" : "Apuntes"}
 
-%% clases-automaticas %%
-%% /clases-automaticas %%
+<!-- clases-automaticas -->
+<!-- /clases-automaticas -->
 
 `;
-      await this.app.vault.create(indexPath, indexContent);
+      indexFile = await this.app.vault.create(indexPath, indexContent);
     }
+
+    await this.waitForFrontmatter(indexFile, 2000);
 
     new Notice(`Ramo "${name}" añadido a ${period}.`, 6000);
   }
@@ -3659,9 +3801,10 @@ tags:
     const label = normalizeNoteLabel(noteLabel);
     const meta = getNoteTypeMeta(label, period);
 
+    const visibleLabel = this.translate?.(label) || label;
     const titleBase = topic
-      ? `(${course.prefix}) ${label} ${number} - ${topic}`
-      : `(${course.prefix}) ${label} ${number}`;
+      ? `(${course.prefix}) ${visibleLabel} ${number} - ${topic}`
+      : `(${course.prefix}) ${visibleLabel} ${number}`;
     const title = suffix ? `${stripAISuffix(titleBase)} ${suffix}` : titleBase;
     const classPath = normalizePath(`${course.folder.path}/${title}.md`);
     const existing = this.app.vault.getAbstractFileByPath(classPath);
@@ -3747,19 +3890,29 @@ ${navigation}
     await this.openForWriting(classFile, targetLeaf);
   }
 
-  async waitForFrontmatter(file, timeout = 500) {
+  async waitForFrontmatter(file, timeout = 2000) {
     if (this.app.metadataCache.getFileCache(file)?.frontmatter) return;
     await new Promise((resolve) => {
       let settled = false;
+      let pollId = null;
       const finish = () => {
         if (settled) return;
         settled = true;
         this.app.metadataCache.offref(ref);
+        if (pollId !== null) window.clearInterval(pollId);
         resolve();
       };
       const ref = this.app.metadataCache.on("changed", (changedFile) => {
-        if (changedFile.path === file.path) finish();
+        if (
+          changedFile.path === file.path &&
+          this.app.metadataCache.getFileCache(file)?.frontmatter
+        ) {
+          finish();
+        }
       });
+      pollId = window.setInterval(() => {
+        if (this.app.metadataCache.getFileCache(file)?.frontmatter) finish();
+      }, 50);
       window.setTimeout(finish, timeout);
     });
   }
@@ -4043,15 +4196,14 @@ tags:
       });
 
     if (automaticLinks.length) {
-      const legacyMarkers = [
-        ["<!-- clases-automaticas -->", "<!-- /clases-automaticas -->"],
-      ];
+      const legacyMarkers = [["%% clases-automaticas %%", "%% /clases-automaticas %%"]];
       const indexContent = await this.app.vault.read(course.index);
+      const notesHeading = indexContent.includes("## Notes") ? "## Notes" : "## Apuntes";
       const updatedIndex = upsertManagedBlock(
         indexContent,
-        "## Apuntes",
-        "%% clases-automaticas %%",
-        "%% /clases-automaticas %%",
+        notesHeading,
+        "<!-- clases-automaticas -->",
+        "<!-- /clases-automaticas -->",
         automaticLinks,
         legacyMarkers
       );
@@ -4059,9 +4211,9 @@ tags:
         await this.app.vault.process(course.index, (content) =>
           upsertManagedBlock(
             content,
-            "## Apuntes",
-            "%% clases-automaticas %%",
-            "%% /clases-automaticas %%",
+            notesHeading,
+            "<!-- clases-automaticas -->",
+            "<!-- /clases-automaticas -->",
             automaticLinks,
             legacyMarkers
           )
@@ -4203,6 +4355,30 @@ tags:
       return;
     }
     new QuickCaptureModal(this, file).open();
+  }
+
+  openQuickCaptureInbox() {
+    new QuickCaptureModal(this, null).open();
+  }
+
+  async createQuickCapture(text, kind = "nota") {
+    await this.ensureFolder(QUICK_CAPTURE_FOLDER);
+    const now = moment();
+    const singleLine = text.replace(/\s+/g, " ").trim();
+    const labels = {
+      nota: "Nota",
+      duda: "Duda",
+      pendiente: "Pendiente",
+      importante: "Importante",
+    };
+    const title = sanitizeFilePart(singleLine).slice(0, 70) || "Captura";
+    const stamp = now.format("YYYY-MM-DD HH-mm-ss");
+    const path = `${QUICK_CAPTURE_FOLDER}/${stamp} - ${title}.md`;
+    const checkbox = kind === "pendiente" ? "- [ ] " : "";
+    const content = `---\ntipo: captura-rapida\nfecha: ${now.format("YYYY-MM-DD")}\nhora: ${now.format("HH:mm")}\ncategoria: ${kind}\ntags:\n  - sistema\n  - tipo/captura-rapida\n---\n\n# ${labels[kind] || labels.nota}\n\n${checkbox}${text.trim()}\n`;
+    const file = await this.app.vault.create(path, content);
+    await this.openForWriting(file);
+    new Notice("Captura rápida guardada.", 3000);
   }
 
   async appendQuickCapture(file, text, kind = "nota") {

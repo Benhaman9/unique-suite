@@ -731,9 +731,11 @@
 }
 
 .inicio-nota:hover,
-.inicio-resultado:hover {
+.inicio-resultado:hover,
+.inicio-resultado.is-selected {
   background: var(--background-modifier-hover);
   border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 1px var(--interactive-accent);
 }
 
 .inicio-item-icon,
@@ -1771,3 +1773,22 @@ button.ua-danger {
 .ua-sync-status { opacity: 0.85; font-size: 0.85em; white-space: nowrap; }
 .ua-muted.ua-sync-status { margin-top: 0.25em; margin-bottom: 0.75em; }
 
+.unique-suite-general-settings {
+  max-width: 46rem;
+  padding-top: 0.5rem;
+}
+
+.unique-suite-general-settings h2 {
+  margin: 1.75rem 0 0.5rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--background-modifier-border);
+  font-size: 1.1rem;
+}
+
+.unique-suite-general-settings h2:first-child {
+  margin-top: 0.25rem;
+}
+
+.unique-suite-general-settings .setting-item {
+  padding: 0.85rem 0;
+}

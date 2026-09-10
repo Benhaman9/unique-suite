@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- **Internationalization:** adds a central English/Spanish catalog for Unique Suite, including settings, dialogs, notices, generated document content, calendar UI, and display-only vault paths.
+- **University workflow:** adds the language setting, a guided first-run note, mandatory course and professor names, translated generated documents, and a standalone Quick Captures inbox with a Home filter.
+- **Agenda:** replaces personal calendar presets with unlimited Google/Outlook ICS subscriptions, one external layer, safer localized path resolution, and a direct Home-to-Agenda action.
+- **Home search:** adds ranked keyboard navigation with Up/Down, Enter to open, and a visible selected result.
+- **Presentation:** replaces visible automatic-index markers with hidden HTML comments while preserving existing notes.
+
 ## 0.1.5
 
 - **Manifest:** publica la descripción corregida, sin la palabra redundante "Obsidian", para volver a ejecutar la revisión automática de Plugins comunitarios.

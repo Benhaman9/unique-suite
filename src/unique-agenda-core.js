@@ -81,23 +81,7 @@ var GOOGLE_PALETTE = [
   { id: "10", name: "Albahaca", hex: "#51b749" },
   { id: "11", name: "Tomate", hex: "#dc2127" }
 ];
-var DEFAULT_COLOR_MAP = {
-  "calculo i": "#5484ed",
-  "contabilidad ii": "#7ae7bf",
-  "algebra lineal": "#7ae7bf",
-  "introduccion a la microeconomia": "#ff887c",
-  "teologia i": "#46d6db",
-  "antropologia": "#46d6db",
-  "la guerra del pacifico": "#ffb878",
-  "tenis": "#ffb878",
-  "clases": "#ff887c",
-  "coro cordillera": "#dbadff",
-  "aniversario golpe de estado": "#e1e1e1",
-  "circulo": "#ff887c",
-  "santa misa": "#9b59b6",
-  "meditacion": "#9b59b6",
-  "acompanamiento": "#9b59b6"
-};
+var DEFAULT_COLOR_MAP = {};
 var DEFAULT_SETTINGS = {
   eventFolder: "Sistema/Agenda/Eventos",
   historyPath: "Sistema/Agenda/Historial.md",
@@ -109,20 +93,17 @@ var DEFAULT_SETTINGS = {
   /** Capas / calendarios visibles (persistidos en data.json). */
   showHorario: true,
   showLocal: true,
-  showGoogleClases: true,
-  showGoogleOficial: true,
-  showGoogleEspiritual: true,
-  showGoogleOther: true,
+  showExternal: true,
   googleClientId: "",
   googleClientSecret: "",
   googleCalendarId: "primary",
   googleAccessToken: "",
-  /** Legacy single ICS URL (migrates to icsUrlOther if labeled feeds empty). */
+  /** Legacy single ICS URL (migrates to icsUrls). */
   icsUrl: "",
-  icsUrlClases: "",
-  icsUrlOficial: "",
-  icsUrlEspiritual: "",
-  icsUrlOther: "",
+  /** Legacy multiline external URLs (migrates to externalCalendars). */
+  icsUrls: "",
+  /** User-managed external calendar subscriptions. */
+  externalCalendars: [],
   enableGoogleImport: false,
   /** Auto-sync ICS while Obsidian is open (independent of Grok Bot). */
   autoSyncEnabled: false,
@@ -133,12 +114,17 @@ var DEFAULT_SETTINGS = {
   lastSyncError: "",
   colorMap: Object.assign({}, DEFAULT_COLOR_MAP)
 };
-var ICS_FEED_DEFS = [
-  { key: "icsUrlClases", label: "Clases", settingName: "Google: Clases" },
-  { key: "icsUrlOficial", label: "Oficial", settingName: "Google: Oficial" },
-  { key: "icsUrlEspiritual", label: "Espiritual", settingName: "Google: Espiritual" },
-  { key: "icsUrlOther", label: "Otros", settingName: "Opcional: Otros" }
-];
+var ICS_FEED_DEFS = [{ key: "icsUrls", label: "External", settingName: "Calendarios Google / ICS" }];
+var MANAGED_PATH_ALIASES = {
+  eventFolder: ["Sistema/Agenda/Eventos", "System/Agenda/Events"],
+  historyPath: ["Sistema/Agenda/Historial.md", "System/Agenda/History.md"],
+  remindersPath: ["Sistema/Recordatorios.md", "System/Reminders.md"],
+  diarioFolder: ["Diario", "Daily"]
+};
+var SEMESTER_FOLDER_ALIASES = ["Semestres", "Semesters"];
+function newExternalCalendar(url = "") {
+  return { id: `external-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, url };
+}
 function clampSyncIntervalMinutes(n) {
   const v = Number(n);
   if (!Number.isFinite(v)) return 60;
@@ -235,11 +221,7 @@ function eventLayerKey(ev) {
   if (kind === "horario") return "showHorario";
   if (kind === "local") return "showLocal";
   if (kind === "google") {
-    const cal = String(ev && ev.googleCalendar || "").trim().toLowerCase();
-    if (cal === "clases") return "showGoogleClases";
-    if (cal === "oficial") return "showGoogleOficial";
-    if (cal === "espiritual") return "showGoogleEspiritual";
-    return "showGoogleOther";
+    return "showExternal";
   }
   return "showLocal";
 }
@@ -251,10 +233,7 @@ function isLayerVisible(settings, ev) {
 var LAYER_DEFS = [
   { key: "showHorario", label: "Horario Unique", hint: "Bloques de Horario.md" },
   { key: "showLocal", label: "Eventos locales", hint: "Notas creadas en la agenda" },
-  { key: "showGoogleClases", label: "Google: Clases", hint: "Calendario Clases" },
-  { key: "showGoogleOficial", label: "Google: Oficial", hint: "Calendario Oficial" },
-  { key: "showGoogleEspiritual", label: "Google: Espiritual", hint: "Calendario Espiritual" },
-  { key: "showGoogleOther", label: "Google / ICS (otros)", hint: "Google sin etiqueta conocida" }
+  { key: "showExternal", label: "Google / ICS", hint: "External calendars" }
 ];
 function normalizeColorKey(s) {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9\s]+/g, " ").replace(/\s+/g, " ").trim();
@@ -482,14 +461,31 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     }
     if (this.settings.showHorario === void 0) this.settings.showHorario = true;
     this.settings.mostrarHorario = this.settings.showHorario;
-    ["showLocal", "showGoogleClases", "showGoogleOficial", "showGoogleEspiritual", "showGoogleOther"].forEach((k) => {
+    ["showLocal", "showExternal"].forEach((k) => {
       if (this.settings[k] === void 0) this.settings[k] = true;
     });
     let migrated = false;
-    if (!(this.settings.icsUrlOther || "").trim() && (this.settings.icsUrl || "").trim()) {
-      this.settings.icsUrlOther = String(this.settings.icsUrl).trim();
+    if (Object.keys(this.settings.colorMap).length) {
+      this.settings.colorMap = {};
       migrated = true;
     }
+    if (!Array.isArray(this.settings.externalCalendars)) {
+      this.settings.externalCalendars = [];
+      migrated = true;
+    }
+    if (!this.settings.externalCalendars.length) {
+      const legacyUrls = [
+        ...String(this.settings.icsUrls || "").split(/\r?\n/),
+        this.settings.icsUrl,
+        this.settings.icsUrlClases,
+        this.settings.icsUrlOficial,
+        this.settings.icsUrlEspiritual,
+        this.settings.icsUrlOther
+      ].map((url) => String(url || "").trim()).filter(Boolean);
+      if (legacyUrls.length) this.settings.externalCalendars = [...new Set(legacyUrls)].map((url) => newExternalCalendar(url));
+      migrated = true;
+    }
+    if (this.resolveManagedPaths()) migrated = true;
     const clamped = clampSyncIntervalMinutes(this.settings.autoSyncIntervalMinutes);
     if (clamped !== this.settings.autoSyncIntervalMinutes) {
       this.settings.autoSyncIntervalMinutes = clamped;
@@ -518,7 +514,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       this.activateView();
     });
     this.addCommand({
-      id: "abrir",
+      id: "abrir-agenda",
       name: "Abrir Unique Agenda",
       callback: () => this.activateView()
     });
@@ -556,15 +552,27 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     this.clearAutoSync();
   }
   getIcsFeeds() {
-    const feeds = [];
-    for (const def of ICS_FEED_DEFS) {
-      let url = String(this.settings[def.key] || "").trim();
-      if (!url && def.key === "icsUrlOther") {
-        url = String(this.settings.icsUrl || "").trim();
+    const calendars = Array.isArray(this.settings.externalCalendars) ? this.settings.externalCalendars : [];
+    const active = calendars.filter((calendar) => String(calendar?.url || "").trim());
+    return active.map((calendar, index) => ({
+      key: String(calendar.id || `external-${index + 1}`),
+      label: active.length > 1 ? `External ${index + 1}` : "External",
+      url: String(calendar.url).trim()
+    }));
+  }
+
+  resolveManagedPaths() {
+    let changed = false;
+    for (const [setting, aliases] of Object.entries(MANAGED_PATH_ALIASES)) {
+      const current = (0, import_obsidian.normalizePath)(this.settings[setting] || "");
+      if (!aliases.includes(current)) continue;
+      const existing = aliases.find((path) => this.app.vault.getAbstractFileByPath(path));
+      if (existing && current !== existing) {
+        this.settings[setting] = existing;
+        changed = true;
       }
-      if (url) feeds.push({ key: def.key, label: def.label, url });
     }
-    return feeds;
+    return changed;
   }
   clearAutoSync() {
     if (this._autoSyncTimer) {
@@ -615,12 +623,17 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     workspace.revealLeaf(leaf);
   }
   async saveSettings() {
+    this.resolveManagedPaths();
     await this.saveData(this.settings);
+  }
+
+  notice(message, timeout) {
+    new import_obsidian.Notice(this.translate ? this.translate(message) : message, timeout);
   }
   async ensureVaultScaffold() {
     try {
       await this.ensureFolder(this.settings.eventFolder);
-      const readmePath = (0, import_obsidian.normalizePath)("Sistema/Agenda/README.md");
+      const readmePath = (0, import_obsidian.normalizePath)(this.settings.eventFolder.split("/").slice(0, -1).concat("README.md").join("/"));
       if (!this.app.vault.getAbstractFileByPath(readmePath)) {
         try {
           await this.app.vault.create(readmePath, AGENDA_README);
@@ -668,7 +681,8 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   async loadHorarioItems(rangeStart, rangeEnd) {
     var _a;
     if (!this.settings.showHorario) return [];
-    const files = getMarkdownInFolder(this.app, "Semestres").filter((f) => /horario\.md$/i.test(f.path));
+    const semesterFolder = SEMESTER_FOLDER_ALIASES.find((path) => this.app.vault.getAbstractFileByPath(path)) || "Semestres";
+    const files = getMarkdownInFolder(this.app, semesterFolder).filter((f) => /horario\.md$/i.test(f.path));
     const items = [];
     for (const file of files) {
       const content = await this.app.vault.cachedRead(file);
@@ -733,7 +747,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     const file = await this.app.vault.create(path, md);
     if (!quiet) {
       await this.appendHistory("creado", ev.titulo, path);
-      new import_obsidian.Notice("Evento creado: " + ev.titulo);
+      this.notice("Evento creado: " + ev.titulo);
     }
     return file;
   }
@@ -745,14 +759,14 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     await this.app.vault.modify(file, md);
     if (!quiet) {
       await this.appendHistory("actualizado", ev.titulo, file.path);
-      new import_obsidian.Notice("Evento actualizado: " + ev.titulo);
+      this.notice("Evento actualizado: " + ev.titulo);
     }
   }
   async deleteEvent(file, titulo) {
     const name = titulo || file.basename;
     await this.app.vault.trash(file, true);
     await this.appendHistory("eliminado", name, file.path);
-    new import_obsidian.Notice("Evento enviado a la papelera: " + name);
+    this.notice("Evento enviado a la papelera: " + name);
   }
   async appendHistory(action, titulo, path) {
     const histPath = (0, import_obsidian.normalizePath)(this.settings.historyPath);
@@ -780,18 +794,18 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       await leaf.openFile(file);
       return;
     }
-    new import_obsidian.Notice("No hay diario para " + y + "-" + m + "-" + d + ". Cr\xE9alo con Unique (Ctrl+Shift+P).");
+    this.notice("No hay diario para " + y + "-" + m + "-" + d + ". Créalo con Unique (Ctrl+Shift+P).");
   }
   async addReminderFromEvent(ev) {
     const path = (0, import_obsidian.normalizePath)(this.settings.remindersPath);
     const file = this.app.vault.getAbstractFileByPath(path);
     if (!(file instanceof import_obsidian.TFile)) {
-      new import_obsidian.Notice("No encuentro " + path);
+      this.notice("No encuentro " + path);
       return;
     }
     const start = parseLocalISO(ev.inicio);
     if (!start) {
-      new import_obsidian.Notice("El evento no tiene fecha de inicio v\xE1lida.");
+      this.notice("El evento no tiene fecha de inicio válida.");
       return;
     }
     const fecha = formatDate(start);
@@ -803,28 +817,28 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     content += row + "\n";
     await this.app.vault.modify(file, content);
     await this.appendHistory("recordatorio", ev.titulo, path);
-    new import_obsidian.Notice("Fila a\xF1adida a Recordatorios de Unique.");
+    this.notice("Fila añadida a Recordatorios de Unique.");
   }
   async importFromGoogle() {
     const feeds = this.getIcsFeeds();
     const token = (this.settings.googleAccessToken || "").trim();
     if (feeds.length === 0 && !token) {
-      new import_obsidian.Notice("Pega las URLs secretas iCal (ICS) en Ajustes \u2192 Unique Agenda. Ver ayuda all\xED.");
+      this.notice("Pega las URLs secretas iCal (ICS) en Ajustes → Unique Agenda. Ver ayuda allí.");
       return;
     }
     if (token && feeds.length === 0 && !this.settings.enableGoogleImport) {
-      new import_obsidian.Notice("Activa \xABImportar desde Google\xBB en Ajustes o pega URLs ICS.");
+      this.notice("Activa «Importar desde Google» en Ajustes o pega URLs ICS.");
       return;
     }
     try {
       const result = await this.runGoogleSync({ source: "manual", quiet: false });
       const n = result && result.changed || 0;
       const total = result && result.seen || 0;
-      if (n > 0) new import_obsidian.Notice("Sync Google: " + n + " cambio(s), " + total + " evento(s) vistos.");
-      else new import_obsidian.Notice("Sync Google: sin cambios (" + total + " evento(s) vistos).");
+      if (n > 0) this.notice("Sync Google: " + n + " cambio(s), " + total + " evento(s) vistos.");
+      else this.notice("Sync Google: sin cambios (" + total + " evento(s) vistos).");
     } catch (err) {
       console.error(err);
-      new import_obsidian.Notice("Error al sincronizar Google Calendar: " + (err && err.message ? err.message : err));
+      this.notice("Error al sincronizar Google Calendar: " + (err && err.message ? err.message : err));
     }
   }
   /**
@@ -902,7 +916,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     }
     if (errors.length) {
       if (!quiet || source === "auto") {
-        new import_obsidian.Notice("Unique Agenda sync: " + errors.join(" \xB7 "));
+        this.notice("Unique Agenda sync: " + errors.join(" · "));
       }
       if (feeds.length === 0 && token) throw new Error(errors.join(" \xB7 "));
     }
@@ -1006,7 +1020,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
         fin: formatLocalISO(end),
         origen: "google",
         googleId: item.id || "",
-        googleCalendar: "Otros",
+        googleCalendar: "External",
         categoria: "Otro",
         todoElDia: allDay,
         lugar: item.location || "",
@@ -1189,7 +1203,7 @@ var AgendaView = class extends import_obsidian.ItemView {
       this.toggleCalendarsPopover(calBtn);
     });
     const hint = bar.createSpan({ cls: "ua-hint", text: "Clic en un d\xEDa para ver sus eventos \xB7 Calendarios para filtrar capas" });
-    hint.setAttr("title", "Usa \xABCalendarios\xBB para ocultar Horario Unique o Google Clases si se solapan.");
+    hint.setAttr("title", "Usa «Calendarios» para ocultar Horario Unique o el calendario externo si se solapan.");
     const sync = bar.createSpan({ cls: "ua-sync-status ua-hint" });
     const feeds = this.plugin.getIcsFeeds().length;
     const auto = this.plugin.settings.autoSyncEnabled && feeds > 0;
@@ -1211,7 +1225,7 @@ var AgendaView = class extends import_obsidian.ItemView {
     pop.createEl("h4", { text: "Calendarios / capas" });
     pop.createEl("p", {
       cls: "ua-muted",
-      text: "Desactiva Horario Unique o Google Clases si se solapan. Los cambios se guardan al instante."
+      text: "Desactiva Horario Unique o el calendario externo si se solapan. Los cambios se guardan al instante."
     });
     const list = pop.createDiv({ cls: "ua-cal-list" });
     LAYER_DEFS.forEach((def) => {
@@ -1219,8 +1233,8 @@ var AgendaView = class extends import_obsidian.ItemView {
       const cb = row.createEl("input");
       cb.type = "checkbox";
       cb.checked = this.plugin.settings[def.key] !== false;
-      row.createSpan({ text: def.label });
-      if (def.hint) row.createSpan({ cls: "ua-muted ua-cal-hint", text: def.hint });
+      row.createSpan({ text: this.plugin.translate(def.label) });
+      if (def.hint) row.createSpan({ cls: "ua-muted ua-cal-hint", text: this.plugin.translate(def.hint) });
       cb.addEventListener("change", async () => {
         this.plugin.settings[def.key] = cb.checked;
         if (def.key === "showHorario") this.plugin.settings.mostrarHorario = cb.checked;
@@ -1519,7 +1533,7 @@ var AgendaView = class extends import_obsidian.ItemView {
   }
   openItem(ev) {
     if (ev.readonly) {
-      new import_obsidian.Notice("Bloque del horario de Unique (solo lectura). Ed\xEDtalo en Horario.md.");
+      this.plugin.notice("Bloque del horario de Unique (solo lectura). Edítalo en Horario.md.");
       if (ev.file) this.app.workspace.getLeaf(true).openFile(ev.file);
       return;
     }
@@ -1663,17 +1677,17 @@ var EventModal = class extends import_obsidian.Modal {
     save.addEventListener("click", async () => {
       const draft = this.readDraft(titulo, inicio, fin, cat, lugar, nota, colorSel);
       if (!draft.titulo.trim()) {
-        new import_obsidian.Notice("El t\xEDtulo no puede estar vac\xEDo.");
+        this.plugin.notice("El título no puede estar vacío.");
         return;
       }
       const a = parseLocalISO(draft.inicio);
       const b = parseLocalISO(draft.fin);
       if (!a || !b) {
-        new import_obsidian.Notice("Revisa las fechas de inicio y fin.");
+        this.plugin.notice("Revisa las fechas de inicio y fin.");
         return;
       }
       if (b <= a) {
-        new import_obsidian.Notice("El fin debe ser posterior al inicio.");
+        this.plugin.notice("El fin debe ser posterior al inicio.");
         return;
       }
       if (isEdit) await this.plugin.updateEvent(ev.file, draft);
@@ -1747,6 +1761,7 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
       cls: "ua-muted",
       text: "Convive con Unique: no modifica su c\xF3digo. El horario activo se lee en solo lectura. Los recordatorios y el diario siguen siendo de Unique."
     });
+    containerEl.createEl("p", { cls: "ua-muted", text: "Las rutas son ubicaciones de archivos; no cambian al cambiar el idioma. Agenda detecta automáticamente las variantes española e inglesa existentes." });
     new import_obsidian.Setting(containerEl).setName("Carpeta de eventos").setDesc("Notas Markdown con frontmatter tipo: evento.").addText(
       (t) => t.setPlaceholder("Sistema/Agenda/Eventos").setValue(this.plugin.settings.eventFolder).onChange(async (v) => {
         this.plugin.settings.eventFolder = v.trim() || DEFAULT_SETTINGS.eventFolder;
@@ -1778,16 +1793,17 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
       d.onChange(async (v) => {
         this.plugin.settings.weekStart = Number(v);
         await this.plugin.saveSettings();
+        await this.plugin._suiteHost?.unique?.syncSuiteLanguage?.();
         this.plugin.refreshViews();
       });
     });
     containerEl.createEl("h3", { text: "Capas / calendarios visibles" });
     containerEl.createEl("p", {
       cls: "ua-muted",
-      text: "Tambi\xE9n disponibles en el bot\xF3n \xABCalendarios\xBB de la vista. Si Horario Unique y Google Clases se solapan, apaga uno de los dos."
+      text: "También disponibles en el botón «Calendarios» de la vista. Si Horario Unique y el calendario externo se solapan, apaga uno de los dos."
     });
     LAYER_DEFS.forEach((def) => {
-      new import_obsidian.Setting(containerEl).setName(def.label).setDesc(def.hint || "").addToggle(
+      new import_obsidian.Setting(containerEl).setName(this.plugin.translate(def.label)).setDesc(this.plugin.translate(def.hint || "")).addToggle(
         (t) => t.setValue(this.plugin.settings[def.key] !== false).onChange(async (v) => {
           this.plugin.settings[def.key] = v;
           if (def.key === "showHorario") this.plugin.settings.mostrarHorario = v;
@@ -1796,34 +1812,10 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
         })
       );
     });
-    containerEl.createEl("h3", { text: "Colores (estilo Google Calendar)" });
+    containerEl.createEl("h3", { text: "Calendarios externos (Google u Outlook)" });
     containerEl.createEl("p", {
       cls: "ua-muted",
-      text: "Relleno = color personalizado del mapa por ramo/t\xEDtulo, o el campo color del evento. Borde = origen (horario cian, local azul, Google naranja). El centro sigue este mapa; puedes editarlo abajo."
-    });
-    new import_obsidian.Setting(containerEl).setName("Mapa de colores (JSON)").setDesc('Clave normalizada (sin acentos, min\xFAsculas) \u2192 hex. Ejemplo: {"calculo i": "#5484ed"}. Se fusiona con el mapa pre-sembrado.').addTextArea((t) => {
-      t.inputEl.rows = 10;
-      t.inputEl.style.width = "100%";
-      t.inputEl.style.fontFamily = "var(--font-monospace)";
-      t.setValue(JSON.stringify(this.plugin.settings.colorMap || {}, null, 2));
-      t.onChange(async (v) => {
-        try {
-          const parsed = JSON.parse(v || "{}");
-          if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-            new import_obsidian.Notice('El mapa de colores debe ser un objeto JSON { clave: "#hex" }.');
-            return;
-          }
-          this.plugin.settings.colorMap = Object.assign({}, DEFAULT_COLOR_MAP, parsed);
-          await this.plugin.saveSettings();
-          this.plugin.refreshViews();
-        } catch (e) {
-        }
-      });
-    });
-    containerEl.createEl("h3", { text: "Google Calendar (ICS \u2014 recomendado)" });
-    containerEl.createEl("p", {
-      cls: "ua-muted",
-      text: "Unique Agenda sincroniza sola mientras Obsidian est\xE1 abierto. No hace falta Grok Bot ni OAuth para el uso diario. En Google Calendar (web): abre el calendario \u2192 tres puntos \u2192 Configuraci\xF3n y uso compartido \u2192 Integrar calendario \u2192 \xABDirecci\xF3n secreta en formato iCal\xBB. Copia esa URL (una por calendario) y p\xE9gala abajo. Las URLs son secretas: no las compartas ni las subas a git."
+      text: "Añade una URL ICS por línea. Google: usa la Dirección secreta en formato iCal. Outlook: usa el enlace ICS de Publicar un calendario. Las URLs son secretas: no las compartas ni las subas a git."
     });
     const syncStatus = containerEl.createEl("p", { cls: "ua-muted ua-sync-status" });
     const last = this.plugin.settings.lastSyncAt;
@@ -1831,10 +1823,7 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
     syncStatus.setText(
       "\xDAltima sync: " + formatSyncStamp(last) + (err ? " \xB7 \xDAltimo error: " + err : "")
     );
-    const onIcsUrlChange = async (key, v) => {
-      const hadFeeds = this.plugin.getIcsFeeds().length > 0;
-      this.plugin.settings[key] = v.trim();
-      if (key === "icsUrlOther") this.plugin.settings.icsUrl = v.trim();
+    const saveExternalCalendars = async (hadFeeds = this.plugin.getIcsFeeds().length > 0) => {
       const hasFeeds = this.plugin.getIcsFeeds().length > 0;
       if (!hadFeeds && hasFeeds && !this.plugin.settings.autoSyncEnabled) {
         this.plugin.settings.autoSyncEnabled = true;
@@ -1842,16 +1831,42 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
       await this.plugin.saveSettings();
       this.plugin.scheduleAutoSync();
     };
-    for (const def of ICS_FEED_DEFS) {
-      new import_obsidian.Setting(containerEl).setName(def.settingName).setDesc(
-        def.key === "icsUrlOther" ? "Feed extra u otras agendas. Tambi\xE9n acepta la antigua URL \xFAnica (icsUrl)." : "URL secreta iCal de este calendario. Vac\xEDo = no sincronizar esta capa."
-      ).addText((t) => {
-        t.setPlaceholder("https://calendar.google.com/calendar/ical/.../basic.ics");
-        t.setValue(String(this.plugin.settings[def.key] || (def.key === "icsUrlOther" ? this.plugin.settings.icsUrl : "") || ""));
-        t.inputEl.style.width = "100%";
-        t.onChange(async (v) => onIcsUrlChange(def.key, v));
+    const externalList = containerEl.createDiv({ cls: "ua-external-calendars" });
+    const renderExternalCalendars = () => {
+      externalList.empty();
+      const calendars = this.plugin.settings.externalCalendars;
+      if (!calendars.length) {
+        externalList.createEl("p", { cls: "ua-muted", text: "Aún no hay calendarios externos." });
+      }
+      calendars.forEach((calendar, index) => {
+        new import_obsidian.Setting(externalList).setName(`Calendario externo ${index + 1}`).addText((t) => {
+          t.setPlaceholder("https://calendar.google.com/calendar/ical/.../basic.ics");
+          t.setValue(String(calendar.url || ""));
+          t.inputEl.style.width = "100%";
+          t.onChange(async (value) => {
+            const hadFeeds = this.plugin.getIcsFeeds().length > 0;
+            calendar.url = value.trim();
+            await saveExternalCalendars(hadFeeds);
+          });
+        }).addExtraButton((button) => {
+          button.setIcon("trash-2").setTooltip("Eliminar calendario").onClick(async () => {
+            const hadFeeds = this.plugin.getIcsFeeds().length > 0;
+            this.plugin.settings.externalCalendars = calendars.filter((item) => item.id !== calendar.id);
+            await saveExternalCalendars(hadFeeds);
+            renderExternalCalendars();
+          });
+        });
       });
-    }
+    };
+    new import_obsidian.Setting(containerEl).setName("Calendarios externos").setDesc(
+      "Añade todos los enlaces ICS de Google u Outlook que necesites. Cada calendario se sincroniza por separado y comparte la misma capa externa."
+    ).addButton((button) => button.setButtonText("+ Añadir calendario").setCta().onClick(async () => {
+      const hadFeeds = this.plugin.getIcsFeeds().length > 0;
+      this.plugin.settings.externalCalendars.push(newExternalCalendar());
+      await saveExternalCalendars(hadFeeds);
+      renderExternalCalendars();
+    }));
+    renderExternalCalendars();
     new import_obsidian.Setting(containerEl).setName("Sincronizaci\xF3n autom\xE1tica").setDesc("Si hay al menos una URL ICS, al cargar el plugin sincroniza una vez y luego cada N minutos (mientras Obsidian est\xE9 abierto).").addToggle(
       (t) => t.setValue(!!this.plugin.settings.autoSyncEnabled).onChange(async (v) => {
         this.plugin.settings.autoSyncEnabled = v;
@@ -1923,6 +1938,7 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
         await this.plugin.saveSettings();
       });
     });
+    this.plugin.localizeSettings?.(containerEl);
   }
 };
 var AGENDA_README = `---
@@ -1965,7 +1981,7 @@ Campos:
 - **inicio** / **fin**: fecha-hora local ISO (\`YYYY-MM-DDTHH:MM:SS\`), sin Z
 - **origen**: \`local\` | \`google\` | (el horario de Unique se pinta en el calendario pero no se guarda aqu\xED)
 - **googleId**: id del evento remoto si viene de Google/ICS
-- **googleCalendar**: \`Clases\` | \`Oficial\` | \`Espiritual\` (filtro de capas)
+- **googleCalendar**: etiqueta de origen del calendario externo
 - **notaVinculada**: ruta opcional a un apunte
 - **categoria**: \`Clase\` | \`Lectura\` | \`Estudio\` | \`Control\` | \`Prueba\` | \`Otro\`
 - **color**: hex opcional del relleno personalizado (si falta, se busca en el mapa por t\xEDtulo/ramo)
