@@ -2028,18 +2028,21 @@ class UniqueHomeView extends ItemView {
       this.selectedIndex = Math.min(this.selectedIndex, this.results.length - 1);
       this.results.forEach((file, index) => {
         const button = createNoteItem(resultsEl, file, true);
+        button.setAttribute("aria-selected", String(index === this.selectedIndex));
         button.toggleClass("is-selected", index === this.selectedIndex);
         button.addEventListener("mouseenter", () => {
           this.selectedIndex = index;
           updateResultSelection();
         });
       });
+      updateResultSelection();
     };
 
     const updateResultSelection = () => {
       resultsEl.querySelectorAll(".inicio-resultado").forEach((element, index) => {
         const selected = index === this.selectedIndex;
         element.toggleClass("is-selected", selected);
+        element.setAttribute("aria-selected", String(selected));
         if (selected) element.scrollIntoView({ block: "nearest" });
       });
     };

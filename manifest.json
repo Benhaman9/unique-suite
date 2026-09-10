@@ -1,7 +1,7 @@
 {
   "id": "unique-suite",
   "name": "Unique Suite",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "minAppVersion": "1.5.0",
   "description": "Sistema universitario: inicio, captura de clases, diario, horario, recordatorios y agenda con capas e ICS (Google Calendar). Reemplaza unique y unique-agenda.",
   "author": "Benjamín Alcalde",

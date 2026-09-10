@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- **Home search:** ensures the highest-ranked result is selected immediately, makes the selection visibly distinct, and keeps it synchronized while navigating with Up/Down in both Home implementations.
+
 ## 0.2.0
 
 - **Internationalization:** adds a central English/Spanish catalog for Unique Suite, including settings, dialogs, notices, generated document content, calendar UI, and display-only vault paths.
