@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- **Manifest:** publica la descripción corregida, sin la palabra redundante "Obsidian", para volver a ejecutar la revisión automática de Plugins comunitarios.
+- **Packaging:** sincroniza las versiones de `package.json` y `package-lock.json` con el manifiesto.
+
 ## 0.1.4
 
 - **Docs:** README reescrito para quien instala desde Plugins comunitarios (instalación comunitaria primero; sin notas de revisión ni asides de desarrollo).

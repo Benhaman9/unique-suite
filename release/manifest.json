@@ -1,9 +1,9 @@
 {
   "id": "unique-suite",
   "name": "Unique Suite",
-  "version": "0.1.3",
+  "version": "0.1.5",
   "minAppVersion": "1.5.0",
-  "description": "Sistema universitario en Obsidian: inicio, captura de clases, diario, horario, recordatorios y agenda con capas e ICS (Google Calendar). Reemplaza unique y unique-agenda.",
+  "description": "Sistema universitario: inicio, captura de clases, diario, horario, recordatorios y agenda con capas e ICS (Google Calendar). Reemplaza unique y unique-agenda.",
   "author": "Benjamín Alcalde",
   "authorUrl": "https://github.com/Benhaman9",
   "isDesktopOnly": false
