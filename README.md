@@ -54,13 +54,11 @@ Si usas otros nombres, ajústalos en Ajustes → Unique / Unique Agenda. Por def
 ## Google Calendar (ICS) y capas
 
 1. En Google Calendar → configuración del calendario → **Secret address in iCal format**.
-2. Pega cada URL en Ajustes → Unique Agenda (Clases / Oficial / Espiritual / Otros).
+2. Pega cada URL en Ajustes → Unique Agenda.
 3. Activa **auto-sync** si quieres sync periódica mientras Obsidian está abierto.
 4. O usa el comando **Importar desde Google Calendar** para un sync manual.
 
 Las capas (horario, local, cada feed Google) se controlan desde la vista Agenda y/o desde los ajustes.
-
-**Cuidado:** no subas a un repo público un `data.json` con URLs secretas ICS ni tokens. Si quieres una plantilla, mira `data.json.example` en el repositorio (ese archivo no viene en la instalación comunitaria).
 
 ---
 
