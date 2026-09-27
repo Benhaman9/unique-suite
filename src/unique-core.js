@@ -77,9 +77,10 @@ function getScopedMarkdownFiles(app, folders) {
   return out;
 }
 
-const UNIQUE_SCOPE_FOLDERS = ["Diario", "Semestres", "Sistema"];
+const UNIQUE_SCOPE_FOLDERS = ["01 Inbox", "Diario", "Semestres", "Sistema"];
 const WELCOME_NOTE_PATH = "00 Inicio/Guia de inicio.md";
-const QUICK_CAPTURE_FOLDER = "Sistema/Capturas rápidas";
+const QUICK_CAPTURE_FOLDER = "01 Inbox";
+const LEGACY_QUICK_CAPTURE_FOLDER = "Sistema/Capturas rápidas";
 const WELCOME_NOTE_CONTENT = `# Bienvenido a Unique Suite / Welcome to Unique Suite
 
 ## Español
@@ -525,13 +526,14 @@ function parseRecordatorios(content) {
 // ─── Modal Selección de Ramo ────────────────────────────────────────────────
 
 class CourseSelectModal extends Modal {
-  constructor(plugin, captureContext, courses, suggestedName) {
+  constructor(plugin, captureContext, courses, suggestedName, onChoose = null) {
     super(plugin.app);
     this.plugin = plugin;
     this.captureContext = captureContext;
     this.courses = courses;
     this.filteredCourses = courses;
     this.suggestedName = suggestedName || "";
+    this.onChoose = onChoose;
   }
 
   onOpen() {
@@ -578,6 +580,13 @@ class CourseSelectModal extends Modal {
 
     const choose = (course) => {
       this.close();
+      if (this.onChoose) {
+        Promise.resolve(this.onChoose(course)).catch((error) => {
+          console.error("No se pudo completar la selección de ramo:", error);
+          new Notice(`No se pudo completar la operación: ${error.message || error}`, 8000);
+        });
+        return;
+      }
       new ClassDetailsModal(this.plugin, this.captureContext, course).open();
     };
 
@@ -1802,7 +1811,10 @@ function noteTypeInfo(file, app) {
   if (tipo === "diario" || file.path.startsWith("Diario/")) {
     return { kind: "diario", label: "Diario", icon: "calendar" };
   }
-  if (tipo === "captura-rapida" || file.path.startsWith(`${QUICK_CAPTURE_FOLDER}/`)) {
+  if (
+    tipo === "captura-rapida" ||
+    file.path.startsWith(`${LEGACY_QUICK_CAPTURE_FOLDER}/`)
+  ) {
     return { kind: "nota", label: "Captura rápida", icon: "zap" };
   }
   if (tipo === "indice-ramo") return { kind: "indice", label: "Índice", icon: "folder" };
@@ -1856,7 +1868,12 @@ class UniqueHomeView extends ItemView {
     }
     if (this.activeFilter === "diarios") return tipo === "diario" || file.path.startsWith("Diario/");
     if (this.activeFilter === "indices") return tipo === "indice-ramo" || tipo === "semestre";
-    if (this.activeFilter === "capturas") return tipo === "captura-rapida" || file.path.startsWith(`${QUICK_CAPTURE_FOLDER}/`);
+    if (this.activeFilter === "capturas") {
+      return (
+        tipo === "captura-rapida" ||
+        file.path.startsWith(`${LEGACY_QUICK_CAPTURE_FOLDER}/`)
+      );
+    }
     return true;
   }
 
@@ -2097,20 +2114,25 @@ class ConfirmCreateDailyNoteModal extends Modal {
   onOpen() {
     const { contentEl } = this;
     contentEl.empty();
+    const language = this.plugin.getLanguage?.() || "es";
     const filename = moment(this.date, "YYYY-MM-DD").format("YYYY-MM-DD");
     const readableDate = moment(this.date, "YYYY-MM-DD")
-      .locale("es")
-      .format("dddd D [de] MMMM [de] YYYY");
-    contentEl.createEl("h2", { text: "Nueva nota diaria" });
+      .locale(language === "en" ? "en" : "es")
+      .format(language === "en" ? "dddd, MMMM D, YYYY" : "dddd D [de] MMMM [de] YYYY");
+    const message = this.plugin
+      .translate("La nota {filename} no existe. ¿Quieres crear la nota para {date}?")
+      .replace("{filename}", filename)
+      .replace("{date}", readableDate);
+    contentEl.createEl("h2", { text: this.plugin.translate("Nueva nota diaria") });
     contentEl.createEl("p", {
-      text: `La nota ${filename} no existe. ¿Quieres crear la nota para ${readableDate}?`,
+      text: message,
     });
     const buttons = contentEl.createDiv({ cls: "modal-button-container" });
     buttons
-      .createEl("button", { text: "Cancelar" })
+      .createEl("button", { text: this.plugin.translate("Cancelar") })
       .addEventListener("click", () => this.close());
     buttons
-      .createEl("button", { cls: "mod-cta", text: "Crear" })
+      .createEl("button", { cls: "mod-cta", text: this.plugin.translate("Crear") })
       .addEventListener("click", async () => {
         await this.onAccept();
         this.close();
@@ -2461,6 +2483,12 @@ module.exports = class UniquePlugin extends Plugin {
       id: "captura-rapida",
       name: "Captura rápida en el apunte actual",
       callback: () => this.openQuickCapture(),
+    });
+
+    this.addCommand({
+      id: "enviar-captura-rapida-a-ramo",
+      name: "Enviar captura rápida a un ramo",
+      callback: () => this.sendActiveQuickCaptureToCourse(),
     });
 
     this.addCommand({
@@ -4361,10 +4389,94 @@ tags:
   }
 
   openQuickCaptureInbox() {
-    new QuickCaptureModal(this, null).open();
+    this.createQuickCapture().catch((error) => {
+      console.error("No se pudo abrir la captura rápida:", error);
+      new Notice(`No se pudo crear la captura rápida: ${error.message || error}`, 8000);
+    });
   }
 
-  async createQuickCapture(text, kind = "nota") {
+  getActiveQuickCapture() {
+    const file = this.app.workspace.getActiveFile();
+    if (!(file instanceof TFile) || file.extension !== "md") return null;
+    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+    if (
+      frontmatter.tipo === "captura-rapida" ||
+      file.path.startsWith(`${LEGACY_QUICK_CAPTURE_FOLDER}/`)
+    ) {
+      return file;
+    }
+    return null;
+  }
+
+  async sendActiveQuickCaptureToCourse() {
+    const file = this.getActiveQuickCapture();
+    if (!(file instanceof TFile)) {
+      new Notice("Abre una nota de captura rápida antes de enviarla a un ramo.", 6000);
+      return;
+    }
+
+    const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter || {};
+    const date = String(frontmatter.fecha || moment().format("YYYY-MM-DD"));
+    const period = String(
+      frontmatter.periodo || this.activePeriod() || this.periodForDate(date)
+    );
+    const courses = this.getCourses(period);
+    if (!courses.length) {
+      new Notice(`No hay ramos configurados para ${period}.`, 7000);
+      return;
+    }
+
+    new CourseSelectModal(
+      this,
+      { date, period, targetLeaf: this.app.workspace.activeLeaf },
+      courses,
+      String(frontmatter.ramo || ""),
+      (course) => this.sendQuickCaptureToCourse(file, course, period)
+    ).open();
+  }
+
+  async sendQuickCaptureToCourse(file, course, period) {
+    if (!(file instanceof TFile) || !(course?.folder instanceof TFolder)) return;
+
+    await this.app.fileManager.processFrontMatter(file, (frontmatter) => {
+      frontmatter.tipo = "captura-rapida";
+      frontmatter.fecha = frontmatter.fecha || moment().format("YYYY-MM-DD");
+      frontmatter.hora = frontmatter.hora || moment().format("HH:mm");
+      frontmatter.ramo = course.name;
+      frontmatter.periodo = period;
+      frontmatter.profesor = course.professor;
+      frontmatter.estado = "asignada";
+      const tags = Array.isArray(frontmatter.tags) ? frontmatter.tags : [];
+      frontmatter.tags = [...new Set([
+        ...tags.filter((tag) => tag !== "sistema/inbox"),
+        `periodo/${period}`,
+        "tipo/captura-rapida",
+      ])];
+    });
+
+    const basePath = normalizePath(`${course.folder.path}/${file.name}`);
+    let targetPath = basePath;
+    let suffix = 2;
+    while (true) {
+      const existing = this.app.vault.getAbstractFileByPath(targetPath);
+      if (!(existing instanceof TFile) || existing.path === file.path) break;
+      targetPath = normalizePath(`${course.folder.path}/${file.basename} - ${suffix}.md`);
+      suffix += 1;
+    }
+
+    let targetFile = file;
+    if (targetPath !== file.path) {
+      await this.app.fileManager.renameFile(file, targetPath);
+      const renamed = this.app.vault.getAbstractFileByPath(targetPath);
+      if (renamed instanceof TFile) targetFile = renamed;
+    }
+
+    await this.waitForFrontmatter(targetFile);
+    await this.openForWriting(targetFile);
+    new Notice(`Captura rápida enviada a ${course.name}.`, 5000);
+  }
+
+  async createQuickCapture(text = "", kind = "nota") {
     await this.ensureFolder(QUICK_CAPTURE_FOLDER);
     const now = moment();
     const singleLine = text.replace(/\s+/g, " ").trim();
@@ -4374,11 +4486,16 @@ tags:
       pendiente: "Pendiente",
       importante: "Importante",
     };
-    const title = sanitizeFilePart(singleLine).slice(0, 70) || "Captura";
-    const stamp = now.format("YYYY-MM-DD HH-mm-ss");
-    const path = `${QUICK_CAPTURE_FOLDER}/${stamp} - ${title}.md`;
+    const title = sanitizeFilePart(singleLine).slice(0, 70) || "Captura rápida";
+    const stamp = now.format("YYYY-MM-DD HH-mm-ss-SSS");
+    let path = `${QUICK_CAPTURE_FOLDER}/${stamp} - ${title}.md`;
+    let suffix = 2;
+    while (this.app.vault.getAbstractFileByPath(path)) {
+      path = `${QUICK_CAPTURE_FOLDER}/${stamp} - ${title} - ${suffix}.md`;
+      suffix += 1;
+    }
     const checkbox = kind === "pendiente" ? "- [ ] " : "";
-    const content = `---\ntipo: captura-rapida\nfecha: ${now.format("YYYY-MM-DD")}\nhora: ${now.format("HH:mm")}\ncategoria: ${kind}\ntags:\n  - sistema\n  - tipo/captura-rapida\n---\n\n# ${labels[kind] || labels.nota}\n\n${checkbox}${text.trim()}\n`;
+    const content = `---\ntipo: captura-rapida\nfecha: ${now.format("YYYY-MM-DD")}\nhora: ${now.format("HH:mm")}\ncategoria: ${kind}\nestado: inbox\nramo: ""\ntags:\n  - universidad\n  - sistema/inbox\n  - tipo/captura-rapida\n---\n\n# ${text.trim() ? labels[kind] || labels.nota : "Captura rápida"}\n\n${checkbox}${text.trim()}\n`;
     const file = await this.app.vault.create(path, content);
     await this.openForWriting(file);
     new Notice("Captura rápida guardada.", 3000);

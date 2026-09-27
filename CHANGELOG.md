@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3
+
+- **Captura rápida:** el botón de Inicio crea y abre una nota propia en `01 Inbox`, con propiedades de captura rápida y sin requerir un apunte abierto.
+- **Procesamiento:** añade el comando **Enviar captura rápida a un ramo**, que permite elegir un ramo, completa sus propiedades académicas y mueve la nota a la carpeta correspondiente.
+- **Compatibilidad:** conserva la clasificación de las capturas antiguas almacenadas en `Sistema/Capturas rápidas`.
+
+## 0.2.2
+
+- **Internationalization:** translates the daily-note confirmation message, action buttons, and date format according to the selected Unique Suite language.
+
 ## 0.2.1
 
 - **Home search:** ensures the highest-ranked result is selected immediately, makes the selection visibly distinct, and keeps it synchronized while navigating with Up/Down in both Home implementations.

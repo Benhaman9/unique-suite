@@ -84,6 +84,8 @@ const spanishToEnglish = {
   "Anterior": "Previous",
   "Siguiente": "Next",
   "Nueva nota diaria": "New daily note",
+  "La nota {filename} no existe. ¿Quieres crear la nota para {date}?": "The note {filename} does not exist. Would you like to create the note for {date}?",
+  "Crear": "Create",
   "Título": "Title",
   "Inicio": "Start",
   "Fin": "End",
