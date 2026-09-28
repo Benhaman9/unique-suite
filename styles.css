@@ -1818,8 +1818,11 @@ button.ua-danger {
   overflow: hidden;
 }
 
-.unique-shortcut-library .modal-title {
-  padding-right: 38px;
+.unique-shortcut-library-modal .modal-title {
+  box-sizing: border-box;
+  width: 100%;
+  padding-right: 62px;
+  padding-left: 30px;
 }
 
 .unique-shortcut-library-intro {
@@ -1926,6 +1929,11 @@ button.ua-danger {
   .unique-shortcut-library-modal .modal-close-button {
     top: 14px;
     right: 14px;
+  }
+
+  .unique-shortcut-library-modal .modal-title {
+    padding-right: 54px;
+    padding-left: 22px;
   }
 
   .unique-shortcut-library-toolbar {

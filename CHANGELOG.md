@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.6
+
+- **Biblioteca de atajos:** aplica el margen directamente al título del modal para alinearlo con el resto del contenido en los temas de Obsidian que lo renderizan fuera de `.modal-content`.
+
 ## 0.2.5
 
 - **Biblioteca de atajos:** corrige el ancho y el espaciado del modal para evitar texto pegado a los bordes y desplazamiento horizontal.
