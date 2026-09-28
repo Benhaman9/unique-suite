@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5
+
+- **Biblioteca de atajos:** corrige el ancho y el espaciado del modal para evitar texto pegado a los bordes y desplazamiento horizontal.
+- **Presentación:** muestra las combinaciones de teclas debajo de cada comando con el color de acento de Obsidian.
+- **Cierre:** alinea la cruz con márgenes superior y derecho simétricos, incluyendo pantallas pequeñas.
+
 ## 0.2.4
 
 - **Biblioteca de atajos:** añade un panel buscable con todos los comandos de Unique Suite y los atajos asignados actualmente en Obsidian.

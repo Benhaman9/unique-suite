@@ -1481,6 +1481,7 @@ class ShortcutLibraryModal extends Modal {
 
   onOpen() {
     const { contentEl } = this;
+    this.modalEl.addClass("unique-shortcut-library-modal");
     contentEl.addClass("unique-shortcut-library");
     this.setTitle(this.text("Biblioteca de atajos", "Shortcut library"));
     contentEl.createEl("p", {

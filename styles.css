@@ -1797,8 +1797,29 @@ button.ua-danger {
 .unique-suite-general-settings .setting-item {
   padding: 0.85rem 0;
 }
+.unique-shortcut-library-modal {
+  width: min(760px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.unique-shortcut-library-modal .modal-close-button {
+  top: 18px;
+  right: 18px;
+  margin: 0;
+}
+
 .unique-shortcut-library {
-  width: min(760px, 92vw);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.unique-shortcut-library .modal-title {
+  padding-right: 38px;
 }
 
 .unique-shortcut-library-intro {
@@ -1807,14 +1828,16 @@ button.ua-danger {
 }
 
 .unique-shortcut-library-toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   margin: 16px 0 8px;
 }
 
 .unique-shortcut-library-search {
-  flex: 1;
+  box-sizing: border-box;
+  width: 100%;
   min-width: 160px;
 }
 
@@ -1825,6 +1848,8 @@ button.ua-danger {
 }
 
 .unique-shortcut-library-list {
+  box-sizing: border-box;
+  width: 100%;
   max-height: min(58vh, 560px);
   overflow-y: auto;
   border: 1px solid var(--background-modifier-border);
@@ -1833,10 +1858,10 @@ button.ua-danger {
 
 .unique-shortcut-library-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 11px 13px;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
@@ -1845,12 +1870,14 @@ button.ua-danger {
 }
 
 .unique-shortcut-library-command {
+  width: 100%;
   min-width: 0;
 }
 
 .unique-shortcut-library-name {
   color: var(--text-normal);
   font-weight: var(--font-semibold);
+  overflow-wrap: anywhere;
 }
 
 .unique-shortcut-library-id {
@@ -1858,23 +1885,23 @@ button.ua-danger {
   color: var(--text-faint);
   font-family: var(--font-monospace);
   font-size: var(--font-ui-smaller);
+  overflow-wrap: anywhere;
 }
 
 .unique-shortcut-library-keys {
   display: flex;
-  flex: 0 0 auto;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 6px;
 }
 
 .unique-shortcut-library-keys kbd {
   padding: 4px 8px;
-  border: 1px solid var(--background-modifier-border-hover);
+  border: 1px solid var(--interactive-accent);
   border-bottom-width: 2px;
   border-radius: var(--radius-s);
-  background: var(--background-secondary);
-  color: var(--text-normal);
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--text-accent);
   font-family: var(--font-monospace);
   font-size: var(--font-ui-small);
   white-space: nowrap;
@@ -1892,13 +1919,16 @@ button.ua-danger {
 }
 
 @media (max-width: 520px) {
-  .unique-shortcut-library-toolbar,
-  .unique-shortcut-library-row {
-    align-items: stretch;
-    flex-direction: column;
+  .unique-shortcut-library {
+    padding: 20px 16px 16px;
   }
 
-  .unique-shortcut-library-keys {
-    justify-content: flex-start;
+  .unique-shortcut-library-modal .modal-close-button {
+    top: 14px;
+    right: 14px;
+  }
+
+  .unique-shortcut-library-toolbar {
+    grid-template-columns: 1fr;
   }
 }
