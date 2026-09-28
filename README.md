@@ -6,6 +6,8 @@ Si estudias y quieres tener la universidad ordenada —clases, diario, horario, 
 
 En la práctica abres el inicio, capturas una clase, miras el horario, anotas recordatorios y ves la agenda con lo local y lo que viene de Google. Las capas te dejan mostrar u ocultar horario, eventos locales y cada feed ICS sin mezclarlo todo.
 
+La **Biblioteca de atajos**, disponible desde Inicio y desde el panel de ajustes, reúne todos los comandos de Unique Suite, muestra las teclas que tienes asignadas y permite buscar por nombre o combinación.
+
 > **Importante:** no lo instales junto a los plugins separados `unique` y `unique-agenda`. Duplicarías vistas, comandos y cintas. Unique Suite los reemplaza.
 
 **Autor:** Benjamín Alcalde · **Plugin id:** `unique-suite`

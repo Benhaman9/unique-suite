@@ -1797,3 +1797,108 @@ button.ua-danger {
 .unique-suite-general-settings .setting-item {
   padding: 0.85rem 0;
 }
+.unique-shortcut-library {
+  width: min(760px, 92vw);
+}
+
+.unique-shortcut-library-intro {
+  margin-top: 0;
+  color: var(--text-muted);
+}
+
+.unique-shortcut-library-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 16px 0 8px;
+}
+
+.unique-shortcut-library-search {
+  flex: 1;
+  min-width: 160px;
+}
+
+.unique-shortcut-library-summary {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.unique-shortcut-library-list {
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+}
+
+.unique-shortcut-library-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.unique-shortcut-library-row:last-child {
+  border-bottom: 0;
+}
+
+.unique-shortcut-library-command {
+  min-width: 0;
+}
+
+.unique-shortcut-library-name {
+  color: var(--text-normal);
+  font-weight: var(--font-semibold);
+}
+
+.unique-shortcut-library-id {
+  margin-top: 2px;
+  color: var(--text-faint);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-smaller);
+}
+
+.unique-shortcut-library-keys {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.unique-shortcut-library-keys kbd {
+  padding: 4px 8px;
+  border: 1px solid var(--background-modifier-border-hover);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-s);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: var(--font-ui-small);
+  white-space: nowrap;
+}
+
+.unique-shortcut-library-unassigned {
+  color: var(--text-faint);
+  font-size: var(--font-ui-small);
+}
+
+.unique-shortcut-library-empty {
+  padding: 28px 16px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 520px) {
+  .unique-shortcut-library-toolbar,
+  .unique-shortcut-library-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .unique-shortcut-library-keys {
+    justify-content: flex-start;
+  }
+}

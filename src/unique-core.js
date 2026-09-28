@@ -1433,6 +1433,126 @@ class CreateCourseModal extends Modal {
 
 // ─── Pestaña de Ajustes / Dashboard Universitario ───────────────────────────
 
+class ShortcutLibraryModal extends Modal {
+  constructor(plugin) {
+    super(plugin.app);
+    this.plugin = plugin;
+  }
+
+  text(es, en) {
+    return this.plugin.getLanguage?.() === "en" ? en : es;
+  }
+
+  getCommands() {
+    const prefix = `${this.plugin.manifest.id}:`;
+    const registry = this.app.commands?.commands || {};
+    return Object.values(registry)
+      .filter((command) => command?.id?.startsWith(prefix))
+      .map((command) => ({
+        id: command.id,
+        shortId: command.id.slice(prefix.length),
+        name: command.name || command.id.slice(prefix.length),
+        hotkeys: this.getHotkeys(command),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, this.plugin.getLanguage?.() || "es"));
+  }
+
+  getHotkeys(command) {
+    const manager = this.app.hotkeyManager;
+    if (!manager) return command.hotkeys || [];
+    const custom = manager.customKeys || {};
+    if (Object.prototype.hasOwnProperty.call(custom, command.id)) {
+      return Array.isArray(custom[command.id]) ? custom[command.id] : [];
+    }
+    const resolved = manager.getHotkeys?.(command.id);
+    return Array.isArray(resolved) ? resolved : command.hotkeys || manager.defaultKeys?.[command.id] || [];
+  }
+
+  formatHotkey(hotkey) {
+    const isMac = /Mac|iPhone|iPad/.test(globalThis.navigator?.platform || "");
+    const names = isMac
+      ? { Mod: "⌘", Ctrl: "⌃", Meta: "⌘", Alt: "⌥", Shift: "⇧" }
+      : { Mod: "Ctrl", Ctrl: "Ctrl", Meta: "Win", Alt: "Alt", Shift: "Shift" };
+    const keys = { ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→", " ": "Space" };
+    return [...(hotkey.modifiers || []).map((modifier) => names[modifier] || modifier), keys[hotkey.key] || hotkey.key]
+      .filter(Boolean)
+      .join(isMac ? "" : "+");
+  }
+
+  onOpen() {
+    const { contentEl } = this;
+    contentEl.addClass("unique-shortcut-library");
+    this.setTitle(this.text("Biblioteca de atajos", "Shortcut library"));
+    contentEl.createEl("p", {
+      cls: "unique-shortcut-library-intro",
+      text: this.text(
+        "Consulta los comandos de Unique y las teclas que tienes asignadas en Obsidian.",
+        "Browse Unique commands and the keys currently assigned in Obsidian."
+      ),
+    });
+
+    const toolbar = contentEl.createDiv({ cls: "unique-shortcut-library-toolbar" });
+    const search = toolbar.createEl("input", {
+      cls: "unique-shortcut-library-search",
+      attr: { type: "search", placeholder: this.text("Buscar comando o atajo…", "Search command or shortcut…") },
+    });
+    const settingsButton = toolbar.createEl("button", {
+      text: this.text("Configurar en Obsidian", "Configure in Obsidian"),
+    });
+    settingsButton.addEventListener("click", () => {
+      this.close();
+      this.app.setting?.open?.();
+      this.app.setting?.openTabById?.("hotkeys");
+    });
+
+    const summary = contentEl.createDiv({ cls: "unique-shortcut-library-summary" });
+    const list = contentEl.createDiv({ cls: "unique-shortcut-library-list" });
+    const commands = this.getCommands();
+    const render = () => {
+      list.empty();
+      const query = normalizeSearch(search.value);
+      const visible = commands.filter((command) => {
+        const shortcuts = command.hotkeys.map((hotkey) => this.formatHotkey(hotkey)).join(" ");
+        return !query || normalizeSearch(`${command.name} ${command.shortId} ${shortcuts}`).includes(query);
+      });
+      const assigned = visible.filter((command) => command.hotkeys.length).length;
+      summary.setText(
+        this.text(
+          `${visible.length} comandos · ${assigned} con atajo asignado`,
+          `${visible.length} commands · ${assigned} with an assigned shortcut`
+        )
+      );
+
+      if (!visible.length) {
+        list.createDiv({ cls: "unique-shortcut-library-empty", text: this.text("No hay coincidencias.", "No matches.") });
+        return;
+      }
+
+      visible.forEach((command) => {
+        const row = list.createDiv({ cls: "unique-shortcut-library-row" });
+        const info = row.createDiv({ cls: "unique-shortcut-library-command" });
+        info.createDiv({ cls: "unique-shortcut-library-name", text: command.name });
+        info.createDiv({ cls: "unique-shortcut-library-id", text: command.shortId });
+        const keys = row.createDiv({ cls: "unique-shortcut-library-keys" });
+        if (!command.hotkeys.length) {
+          keys.createSpan({ cls: "unique-shortcut-library-unassigned", text: this.text("Sin asignar", "Unassigned") });
+        } else {
+          command.hotkeys.forEach((hotkey) => {
+            keys.createEl("kbd", { text: this.formatHotkey(hotkey) });
+          });
+        }
+      });
+    };
+    search.addEventListener("input", render);
+    render();
+    search.focus();
+  }
+
+  onClose() {
+    this.contentEl.empty();
+  }
+}
+
 class UniversitySettingsTab extends PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
@@ -1453,6 +1573,14 @@ class UniversitySettingsTab extends PluginSettingTab {
       text: "Administra semestres, ramos, tipos de apunte y sincronización de toda la bóveda.",
       cls: "captura-dashboard-subtitle",
     });
+
+    new Setting(containerEl)
+      .setName("Biblioteca de atajos")
+      .setDesc("Consulta todos los comandos de Unique y los atajos que tienes asignados.")
+      .addButton((button) => {
+        button.setButtonText("Ver atajos");
+        button.onClick(() => new ShortcutLibraryModal(this.plugin).open());
+      });
 
     new Setting(containerEl)
       .setName("Confirmar antes de crear una nota diaria")
@@ -1957,6 +2085,7 @@ class UniqueHomeView extends ItemView {
     this.createAction(actionsRow, "calendar", "Diario de hoy", () => this.plugin.openDate(moment().format("YYYY-MM-DD")));
     this.createAction(actionsRow, "history", "Último apunte", () => this.plugin.reopenLastClass());
     this.createAction(actionsRow, "layout-dashboard", "Panel", () => new DashboardModal(this.plugin).open());
+    this.createAction(actionsRow, "keyboard", "Atajos", () => new ShortcutLibraryModal(this.plugin).open());
 
     if (!period || courses.length === 0) {
       this.createAction(actionsRow, "wand-sparkles", "Preparar bóveda", async () => {
@@ -2447,6 +2576,12 @@ module.exports = class UniquePlugin extends Plugin {
       id: "abrir-dashboard",
       name: "Abrir Panel de Control Universitario",
       callback: () => new DashboardModal(this).open(),
+    });
+
+    this.addCommand({
+      id: "abrir-biblioteca-atajos",
+      name: "Abrir biblioteca de atajos",
+      callback: () => new ShortcutLibraryModal(this).open(),
     });
 
     this.addCommand({

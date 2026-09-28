@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4
+
+- **Biblioteca de atajos:** añade un panel buscable con todos los comandos de Unique Suite y los atajos asignados actualmente en Obsidian.
+- **Acceso rápido:** la biblioteca se abre desde Inicio, desde el panel de ajustes o mediante el comando **Abrir biblioteca de atajos**.
+- **Configuración:** incluye un acceso directo a la sección de atajos de Obsidian y adapta su interfaz a español o inglés.
+
 ## 0.2.3
 
 - **Captura rápida:** el botón de Inicio crea y abre una nota propia en `01 Inbox`, con propiedades de captura rápida y sin requerir un apunte abierto.
