@@ -1821,6 +1821,7 @@ button.ua-danger {
 .unique-shortcut-library-modal .modal-title {
   box-sizing: border-box;
   width: 100%;
+  margin-top: 22px;
   padding-right: 62px;
   padding-left: 30px;
 }
@@ -1932,6 +1933,7 @@ button.ua-danger {
   }
 
   .unique-shortcut-library-modal .modal-title {
+    margin-top: 16px;
     padding-right: 54px;
     padding-left: 22px;
   }

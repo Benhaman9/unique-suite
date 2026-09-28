@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.7
+
+- **Biblioteca de atajos:** añade separación superior explícita al título del modal para alinearlo con el margen lateral.
+
 ## 0.2.6
 
 - **Biblioteca de atajos:** aplica el margen directamente al título del modal para alinearlo con el resto del contenido en los temas de Obsidian que lo renderizan fuera de `.modal-content`.
