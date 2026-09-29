@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.8
+
+- **English completeness:** localizes remaining interfaces, commands, notices, prompts, accessibility labels, dates, month/day names, relative dates, and dynamic status text.
+- **Generated content:** creates daily notes, quick captures, class wrap-ups, follow-ups, event notes, Agenda history/README files, and vault scaffolding in the selected language while keeping stable paths and machine-readable metadata compatible.
+- **Schedule compatibility:** reads both Spanish and English schedule headers and weekday names, including schedules generated while English is selected.
+- **Regression coverage:** adds an i18n verification script for exact and dynamic translations, generated-content branches, DOM attributes, and bundled output.
+
 ## 0.2.7
 
 - **Biblioteca de atajos:** añade separación superior explícita al título del modal para alinearlo con el margen lateral.

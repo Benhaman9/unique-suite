@@ -493,7 +493,16 @@ function frontmatterScalar(content, key) {
   return raw;
 }
 
-const TIPOS_RECORDATORIO = new Set(["semanal", "anual", "unico", "antes"]);
+const REMINDER_TYPE_ALIASES = {
+  semanal: "semanal",
+  weekly: "semanal",
+  anual: "anual",
+  annual: "anual",
+  unico: "unico",
+  once: "unico",
+  antes: "antes",
+  before: "antes",
+};
 
 function parseRecordatorios(content) {
   const rows = [];
@@ -508,8 +517,8 @@ function parseRecordatorios(content) {
     if (cells.length < 5) continue;
 
     const [tipo, cuando, diasAntes, hora, texto] = cells;
-    const tipoNormalizado = normalizeSearch(tipo);
-    if (!TIPOS_RECORDATORIO.has(tipoNormalizado) || !texto) continue;
+    const tipoNormalizado = REMINDER_TYPE_ALIASES[normalizeSearch(tipo)];
+    if (!tipoNormalizado || !texto) continue;
     if (timeToMinutes(hora) === null) continue;
 
     rows.push({
@@ -971,7 +980,7 @@ class ClassDetailsModal extends Modal {
 
   promptAddNewDefaultLabel() {
     const name = window.prompt(
-      "Escribe el nuevo tipo de apunte predeterminado (ej. Taller, Control, Laboratorio):"
+      this.plugin.translate("Escribe el nuevo tipo de apunte predeterminado (ej. Taller, Control, Laboratorio):")
     );
     if (!name || !name.trim()) return;
     const clean = normalizeNoteLabel(name);
@@ -1892,18 +1901,18 @@ class DashboardModal extends Modal {
 
 // ─── Vista Inicio Unificada ─────────────────────────────────────────────────
 
-function relativeDate(mtime) {
+function relativeDate(mtime, language = "es") {
   const diff = Date.now() - mtime;
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  if (minutes < 1) return "Ahora";
+  if (minutes < 1) return language === "en" ? "Now" : "Ahora";
   if (minutes < 60) return `${minutes} min`;
   if (hours < 24) return `${hours} h`;
-  if (days === 1) return "Ayer";
+  if (days === 1) return language === "en" ? "Yesterday" : "Ayer";
   if (days < 7) return `${days} d`;
-  if (days < 30) return `${Math.floor(days / 7)} sem`;
-  return moment(mtime).locale("es").format("D MMM");
+  if (days < 30) return language === "en" ? `${Math.floor(days / 7)} wk` : `${Math.floor(days / 7)} sem`;
+  return moment(mtime).locale(language === "en" ? "en" : "es").format("D MMM");
 }
 
 function greeting(language = "es") {
@@ -2138,7 +2147,7 @@ class UniqueHomeView extends ItemView {
         });
       }
       const rightMeta = btn.createDiv({ cls: "inicio-item-right" });
-      rightMeta.createSpan({ cls: "inicio-item-fecha", text: relativeDate(file.stat.mtime) });
+      rightMeta.createSpan({ cls: "inicio-item-fecha", text: relativeDate(file.stat.mtime, language) });
       btn.addEventListener("click", () => this.openFile(file));
       return btn;
     };
@@ -2467,7 +2476,7 @@ class UniqueCalendarView extends ItemView {
     const title = nav.createEl("h3", { cls: "title svelte-1vwr9dd" });
     title.createSpan({
       cls: "month svelte-1vwr9dd",
-      text: this.displayedMonth.clone().locale("es").format("MMM"),
+      text: this.displayedMonth.clone().locale(this.plugin.getLanguage?.() === "en" ? "en" : "es").format("MMM"),
     });
     title.appendText(" ");
     title.createSpan({
@@ -3115,6 +3124,7 @@ module.exports = class UniquePlugin extends Plugin {
 
   async ensureVaultReady({ quiet = true } = {}) {
     const created = [];
+    const english = this.getLanguage?.() === "en";
     const folders = [
       "00 Inicio",
       "01 Inbox",
@@ -3149,9 +3159,9 @@ tags:
     const files = [
       [
         "00 Inicio/Inicio.md",
-        `# Inicio
+        `# ${english ? "Home" : "Inicio"}
 
-Usa la vista Inicio del plugin para buscar, crear apuntes, abrir el diario y revisar ramos.
+${english ? "Use the plugin Home view to search, create notes, open daily notes, and review courses." : "Usa la vista Inicio del plugin para buscar, crear apuntes, abrir el diario y revisar ramos."}
 `,
       ],
       [
@@ -3165,19 +3175,19 @@ Usa la vista Inicio del plugin para buscar, crear apuntes, abrir el diario y rev
       ["Sistema/Plantillas/Nota diaria.md", dailyTemplate],
       [
         "Sistema/Recordatorios.md",
-        `# Recordatorios
+        `# ${english ? "Reminders" : "Recordatorios"}
 
-| Tipo | Cuándo | Días antes | Hora | Texto |
+| ${english ? "Type" : "Tipo"} | ${english ? "When" : "Cuándo"} | ${english ? "Days before" : "Días antes"} | ${english ? "Time" : "Hora"} | ${english ? "Text" : "Texto"} |
 |---|---|---:|---|---|
-| semanal | lunes |  | 08:00 | Revisar pendientes de la semana |
-| anual | 03-01 |  | 09:00 | Preparar inicio de semestre |
+| ${english ? "weekly" : "semanal"} | ${english ? "monday" : "lunes"} |  | 08:00 | ${english ? "Review this week's tasks" : "Revisar pendientes de la semana"} |
+| ${english ? "annual" : "anual"} | 03-01 |  | 09:00 | ${english ? "Prepare for the start of the semester" : "Preparar inicio de semestre"} |
 `,
       ],
       [
         "Sistema/README.md",
-        `# Sistema universitario
+        `# ${english ? "University system" : "Sistema universitario"}
 
-Esta bóveda puede funcionar con Unique sin depender de plantillas de apuntes ni plugins externos para el flujo central.
+${english ? "This vault can use Unique's core workflow without note templates or external plugins." : "Esta bóveda puede funcionar con Unique sin depender de plantillas de apuntes ni plugins externos para el flujo central."}
 `,
       ],
     ];
@@ -3189,11 +3199,11 @@ Esta bóveda puede funcionar con Unique sin depender de plantillas de apuntes ni
     if (!quiet) {
       const missing = this.recommendedPluginStatus().map(([, name]) => name);
       const createdText = created.length
-        ? `${created.length} recursos creados.`
-        : "La bóveda ya tenía los recursos base.";
+        ? (english ? `${created.length} resources created.` : `${created.length} recursos creados.`)
+        : (english ? "The vault already contained the base resources." : "La bóveda ya tenía los recursos base.");
       const missingText = missing.length
-        ? ` Extras no activos: ${missing.join(", ")}.`
-        : " Extras principales activos.";
+        ? (english ? ` Inactive extras: ${missing.join(", ")}.` : ` Extras no activos: ${missing.join(", ")}.`)
+        : (english ? " Main extras are active." : " Extras principales activos.");
       new Notice(`${createdText}${missingText}`, 9000);
     }
 
@@ -3588,9 +3598,12 @@ tags:
     }
 
     const removed = await this.cleanEmptyDailyNotes();
+    const english = this.getLanguage?.() === "en";
 
     new Notice(
-      `Bóveda sincronizada:\n${coursesFixed} cursos reconstruidos. ${notesConnected} parejas de IA conectadas. ${removed} diarios vacíos limpiados.`,
+      english
+        ? `Vault synchronized:\n${coursesFixed} courses rebuilt. ${notesConnected} AI pairs connected. ${removed} empty daily notes cleaned.`
+        : `Bóveda sincronizada:\n${coursesFixed} cursos reconstruidos. ${notesConnected} parejas de IA conectadas. ${removed} diarios vacíos limpiados.`,
       7000
     );
   }
@@ -3685,7 +3698,16 @@ tags:
     const now = moment();
     const today = now.format("YYYY-MM-DD");
     const nowHM = now.format("HH:mm");
-    const weekday = normalizeSearch(now.locale("es").format("dddd"));
+    const weekday = now.day();
+    const weekdayAliases = [
+      ["domingo", "sunday"],
+      ["lunes", "monday"],
+      ["martes", "tuesday"],
+      ["miercoles", "wednesday"],
+      ["jueves", "thursday"],
+      ["viernes", "friday"],
+      ["sabado", "saturday"],
+    ];
     const monthDay = now.format("MM-DD");
 
     const data = (await this.loadData()) || {};
@@ -3697,7 +3719,7 @@ tags:
 
       let due = false;
       if (row.tipo === "semanal") {
-        due = normalizeSearch(row.cuando) === weekday;
+        due = weekdayAliases[weekday].includes(normalizeSearch(row.cuando));
       } else if (row.tipo === "anual") {
         due = row.cuando === monthDay;
       } else if (row.tipo === "unico") {
@@ -3727,15 +3749,16 @@ tags:
   }
 
   dispararRecordatorio(texto) {
-    new Notice(`[Recordatorio] ${texto}`, 15000);
+    const english = this.getLanguage?.() === "en";
+    new Notice(`${english ? "[Reminder]" : "[Recordatorio]"} ${texto}`, 15000);
     try {
       if (typeof Notification === "undefined") return;
       if (Notification.permission === "granted") {
-        new Notification("Recordatorio", { body: texto });
+        new Notification(english ? "Reminder" : "Recordatorio", { body: texto });
       } else if (Notification.permission !== "denied") {
         Notification.requestPermission().then((permission) => {
           if (permission === "granted")
-            new Notification("Recordatorio", { body: texto });
+            new Notification(english ? "Reminder" : "Recordatorio", { body: texto });
         });
       }
     } catch (error) {
@@ -3817,13 +3840,20 @@ tags:
     if (!file) return "";
     const rows = parseHorario(await this.app.vault.read(file));
     if (!rows.length) return "";
-    const weekday = normalizeSearch(
-      moment(date, "YYYY-MM-DD").locale("es").format("dddd")
-    );
+    const weekday = moment(date, "YYYY-MM-DD").day();
+    const weekdayAliases = [
+      ["domingo", "sunday"],
+      ["lunes", "monday"],
+      ["martes", "tuesday"],
+      ["miercoles", "wednesday"],
+      ["jueves", "thursday"],
+      ["viernes", "friday"],
+      ["sabado", "saturday"],
+    ];
     const nowMinutes = timeToMinutes(moment().format("HH:mm"));
     const match = rows.find(
       (row) =>
-        row.day === weekday &&
+        weekdayAliases[weekday].includes(row.day) &&
         nowMinutes >= row.startMinutes &&
         nowMinutes < row.endMinutes
     );
@@ -4108,9 +4138,10 @@ ${navigation}
 
   buildDailyNoteContent(date) {
     const period = this.periodForDate(date);
+    const english = this.getLanguage?.() === "en";
     const humanDate = moment(date, "YYYY-MM-DD")
-      .locale("es")
-      .format("dddd D [de] MMMM");
+      .locale(english ? "en" : "es")
+      .format(english ? "dddd, MMMM D" : "dddd D [de] MMMM");
     const heading = humanDate.charAt(0).toUpperCase() + humanDate.slice(1);
     const status = this.statusForPeriod(period);
     return `---
@@ -4241,6 +4272,7 @@ tags:
   }
 
   async rebuildCourseStructure(course) {
+    const english = this.getLanguage?.() === "en";
     const allRecords = await this.getCourseClassRecords(course);
     const indexTarget = withoutExtension(course.index.path);
     const navigationPattern =
@@ -4280,14 +4312,14 @@ tags:
             : null);
 
         const aiLink = matchedAI
-          ? `[[${withoutExtension(matchedAI.file.path)}|Versión IA${
+          ? `[[${withoutExtension(matchedAI.file.path)}|${english ? "AI version" : "Versión IA"}${
               matchedAI.aiSource ? ` (${matchedAI.aiSource})` : ""
             }]]`
           : "";
 
         const links = [
           previous
-            ? `[[${withoutExtension(previous.file.path)}|← ${previous.label} ${
+            ? `[[${withoutExtension(previous.file.path)}|← ${this.translate?.(previous.label) || previous.label} ${
                 previous.displayNumber
               }]]`
             : "",
@@ -4297,7 +4329,7 @@ tags:
             : "",
           aiLink,
           next
-            ? `[[${withoutExtension(next.file.path)}|${next.label} ${
+            ? `[[${withoutExtension(next.file.path)}|${this.translate?.(next.label) || next.label} ${
                 next.displayNumber
               } →]]`
             : "",
@@ -4329,7 +4361,7 @@ tags:
       );
 
       const humanLink = matchedHuman
-        ? `[[${withoutExtension(matchedHuman.file.path)}|← Apunte original]]`
+        ? `[[${withoutExtension(matchedHuman.file.path)}|← ${english ? "Original note" : "Apunte original"}]]`
         : "";
 
       const links = [
@@ -4356,7 +4388,7 @@ tags:
     const automaticLinks = allRecords
       .filter((record) => record.managed)
       .map((record) => {
-        const alias = `${record.label} ${record.displayNumber}${
+        const alias = `${this.translate?.(record.label) || record.label} ${record.displayNumber}${
           record.topic ? ` · ${record.topic}` : ""
         }${record.isAI ? ` (${record.aiSource || "IA"})` : ""}`;
         return `- [[${withoutExtension(record.file.path)}|${alias}]]`;
@@ -4616,13 +4648,11 @@ tags:
     await this.ensureFolder(QUICK_CAPTURE_FOLDER);
     const now = moment();
     const singleLine = text.replace(/\s+/g, " ").trim();
-    const labels = {
-      nota: "Nota",
-      duda: "Duda",
-      pendiente: "Pendiente",
-      importante: "Importante",
-    };
-    const title = sanitizeFilePart(singleLine).slice(0, 70) || "Captura rápida";
+    const english = this.getLanguage?.() === "en";
+    const labels = english
+      ? { nota: "Note", duda: "Question", pendiente: "Task", importante: "Important" }
+      : { nota: "Nota", duda: "Duda", pendiente: "Pendiente", importante: "Importante" };
+    const title = sanitizeFilePart(singleLine).slice(0, 70) || (english ? "Quick capture" : "Captura rápida");
     const stamp = now.format("YYYY-MM-DD HH-mm-ss-SSS");
     let path = `${QUICK_CAPTURE_FOLDER}/${stamp} - ${title}.md`;
     let suffix = 2;
@@ -4631,7 +4661,7 @@ tags:
       suffix += 1;
     }
     const checkbox = kind === "pendiente" ? "- [ ] " : "";
-    const content = `---\ntipo: captura-rapida\nfecha: ${now.format("YYYY-MM-DD")}\nhora: ${now.format("HH:mm")}\ncategoria: ${kind}\nestado: inbox\nramo: ""\ntags:\n  - universidad\n  - sistema/inbox\n  - tipo/captura-rapida\n---\n\n# ${text.trim() ? labels[kind] || labels.nota : "Captura rápida"}\n\n${checkbox}${text.trim()}\n`;
+    const content = `---\ntipo: captura-rapida\nfecha: ${now.format("YYYY-MM-DD")}\nhora: ${now.format("HH:mm")}\ncategoria: ${kind}\nestado: inbox\nramo: ""\ntags:\n  - universidad\n  - sistema/inbox\n  - tipo/captura-rapida\n---\n\n# ${text.trim() ? labels[kind] || labels.nota : (english ? "Quick capture" : "Captura rápida")}\n\n${checkbox}${text.trim()}\n`;
     const file = await this.app.vault.create(path, content);
     await this.openForWriting(file);
     new Notice("Captura rápida guardada.", 3000);
@@ -4640,19 +4670,17 @@ tags:
   async appendQuickCapture(file, text, kind = "nota") {
     const timestamp = moment().format("HH:mm");
     const singleLine = text.replace(/\s+/g, " ").trim();
-    const labels = {
-      nota: "Nota",
-      duda: "Duda",
-      pendiente: "Pendiente",
-      importante: "Importante",
-    };
+    const english = this.getLanguage?.() === "en";
+    const labels = english
+      ? { nota: "Note", duda: "Question", pendiente: "Task", importante: "Important" }
+      : { nota: "Nota", duda: "Duda", pendiente: "Pendiente", importante: "Importante" };
     const label = labels[kind] || labels.nota;
     const line =
       kind === "pendiente"
         ? `- [ ] **${timestamp} · ${label}** ${singleLine}`
         : `- **${timestamp} · ${label}** ${singleLine}`;
     await this.app.vault.process(file, (content) =>
-      appendLineToSection(content, "## Capturas rápidas", line)
+      appendLineToSection(content, english ? "## Quick captures" : "## Capturas rápidas", line)
     );
     await this.openForWriting(file);
     new Notice("Captura rápida guardada.", 3000);
@@ -4666,7 +4694,8 @@ tags:
     }
 
     const content = await this.app.vault.read(file);
-    const heading = "## Cierre de clase";
+    const english = this.getLanguage?.() === "en";
+    const heading = english ? "## Class wrap-up" : "## Cierre de clase";
     if (sectionBounds(content, heading)) {
       await this.openForWriting(file);
       new Notice("Este apunte ya tiene cierre de clase.", 4000);
@@ -4675,18 +4704,18 @@ tags:
 
     const block = `${heading}
 
-### Ideas clave
+### ${english ? "Key ideas" : "Ideas clave"}
 - 
 - 
 - 
 
-### Dudas
+### ${english ? "Questions" : "Dudas"}
 - [ ] 
 
-### Pendientes
-- [ ] Repasar este apunte
+### ${english ? "Tasks" : "Pendientes"}
+- [ ] ${english ? "Review this note" : "Repasar este apunte"}
 
-### Próxima acción
+### ${english ? "Next action" : "Próxima acción"}
 - 
 `;
     await this.app.vault.process(file, (current) =>
@@ -4717,7 +4746,8 @@ tags:
     const cached =
       this.app.metadataCache.getFileCache(file)?.frontmatter || {};
     const ramo = String(cached.ramo || "").trim();
-    const heading = ramo ? `## ${ramo}` : "## Continuaciones";
+    const english = this.getLanguage?.() === "en";
+    const heading = ramo ? `## ${ramo}` : (english ? "## Follow-ups" : "## Continuaciones");
 
     const noteLink = `[[${withoutExtension(file.path)}|${file.basename}]]`;
     const currentDay = await this.app.vault.read(dayFile);
@@ -4732,7 +4762,7 @@ tags:
     const currentNote = await this.app.vault.read(file);
     if (!currentNote.includes(dayLink)) {
       await this.app.vault.process(file, (content) =>
-        appendLinkToSection(content, "## Continuaciones", dayLink)
+        appendLinkToSection(content, english ? "## Follow-ups" : "## Continuaciones", dayLink)
       );
     }
 

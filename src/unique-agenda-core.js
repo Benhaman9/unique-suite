@@ -34,6 +34,9 @@ var CATEGORIAS = ["Clase", "Lectura", "Estudio", "Control", "Prueba", "Otro"];
 var DIAS_LARGOS = ["Domingo", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado"];
 var DIAS_CORTOS = ["Dom", "Lun", "Mar", "Mie", "Jue", "Vie", "Sab"];
 var MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+var DAYS_LONG_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+var DAYS_SHORT_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+var MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 function collectMarkdownUnder(root, out = []) {
   if (!root) return out;
@@ -55,12 +58,19 @@ function getMarkdownInFolder(app, folderPath) {
 
 var DIA_INDEX = {
   domingo: 0,
+  sunday: 0,
   lunes: 1,
+  monday: 1,
   martes: 2,
+  tuesday: 2,
   miercoles: 3,
+  wednesday: 3,
   jueves: 4,
+  thursday: 4,
   viernes: 5,
-  sabado: 6
+  friday: 5,
+  sabado: 6,
+  saturday: 6
 };
 var ORIGIN_BORDER = {
   horario: "#4ecdc4",
@@ -130,8 +140,8 @@ function clampSyncIntervalMinutes(n) {
   if (!Number.isFinite(v)) return 60;
   return Math.min(360, Math.max(15, Math.round(v)));
 }
-function formatSyncStamp(iso) {
-  if (!iso) return "nunca";
+function formatSyncStamp(iso, language = "es") {
+  if (!iso) return language === "en" ? "never" : "nunca";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return String(iso);
   return formatDate(d) + " " + formatHumanTime(d);
@@ -179,11 +189,12 @@ function parseLocalISO(raw) {
 function formatHumanTime(d) {
   return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
 }
-function formatHumanDate(d) {
+function formatHumanDate(d, language = "es") {
+  if (language === "en") return MONTHS_EN[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
   return d.getDate() + " de " + MESES[d.getMonth()].toLowerCase() + " de " + d.getFullYear();
 }
-function diaNombre(d) {
-  return DIAS_LARGOS[d.getDay()];
+function diaNombre(d, language = "es") {
+  return language === "en" ? DAYS_LONG_EN[d.getDay()] : DIAS_LARGOS[d.getDay()];
 }
 function normalizeDiaKey(s) {
   return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -197,10 +208,15 @@ function categoryClass(cat, origen, readonly) {
   if (readonly || origen === "horario") return "ua-cat-horario";
   const key = String(cat || "Otro").toLowerCase();
   if (key === "clase") return "ua-cat-clase";
+  if (key === "class") return "ua-cat-clase";
   if (key === "lectura") return "ua-cat-lectura";
+  if (key === "reading") return "ua-cat-lectura";
   if (key === "estudio") return "ua-cat-estudio";
+  if (key === "study") return "ua-cat-estudio";
   if (key === "control") return "ua-cat-control";
+  if (key === "quiz") return "ua-cat-control";
   if (key === "prueba") return "ua-cat-prueba";
+  if (key === "test") return "ua-cat-prueba";
   return "ua-cat-otro";
 }
 function originKind(ev) {
@@ -330,7 +346,8 @@ function parseFrontmatter(content) {
   }
   return { data, body };
 }
-function eventToMarkdown(ev, body) {
+function eventToMarkdown(ev, body, language = "es") {
+  const english = language === "en";
   const lines = [
     "---",
     "tipo: evento",
@@ -346,11 +363,11 @@ function eventToMarkdown(ev, body) {
   if (ev.color) lines.push("color: " + quoteYaml(ev.color));
   if (ev.todoElDia) lines.push("todoElDia: true");
   if (ev.lugar) lines.push("lugar: " + quoteYaml(ev.lugar));
-  lines.push("---", "", "# " + (ev.titulo || "Evento"), "");
-  if (ev.lugar) lines.push("- Lugar: " + ev.lugar);
-  lines.push("- Inicio: `" + ev.inicio + "`");
-  lines.push("- Fin: `" + ev.fin + "`");
-  if (ev.notaVinculada) lines.push("- Nota: [[" + ev.notaVinculada + "]]");
+  lines.push("---", "", "# " + (ev.titulo || (english ? "Event" : "Evento")), "");
+  if (ev.lugar) lines.push("- " + (english ? "Location" : "Lugar") + ": " + ev.lugar);
+  lines.push("- " + (english ? "Start" : "Inicio") + ": `" + ev.inicio + "`");
+  lines.push("- " + (english ? "End" : "Fin") + ": `" + ev.fin + "`");
+  if (ev.notaVinculada) lines.push("- " + (english ? "Note" : "Nota") + ": [[" + ev.notaVinculada + "]]");
   lines.push("");
   if (body && body.trim()) lines.push(body.trim(), "");
   return lines.join("\n");
@@ -415,7 +432,7 @@ function parseIcsDate(raw) {
   }
   return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4] || 0), Number(m[5] || 0), Number(m[6] || 0));
 }
-function parseIcs(text) {
+function parseIcs(text, language = "es") {
   const unfolded = String(text || "").replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
   const chunks = unfolded.split(/BEGIN:VEVENT/i);
   const events = [];
@@ -432,12 +449,12 @@ function parseIcs(text) {
     if (!end) end = new Date(start.getTime() + 60 * 60 * 1e3);
     const allDay = !/T/.test(grab("DTSTART"));
     events.push({
-      titulo: unescapeIcs(grab("SUMMARY")) || "Evento importado",
+      titulo: unescapeIcs(grab("SUMMARY")) || (language === "en" ? "Imported event" : "Evento importado"),
       inicio: formatLocalISO(start),
       fin: formatLocalISO(end),
       origen: "google",
       googleId: grab("UID"),
-      categoria: "Otro",
+      categoria: language === "en" ? "Other" : "Otro",
       todoElDia: allDay,
       lugar: unescapeIcs(grab("LOCATION"))
     });
@@ -636,14 +653,14 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       const readmePath = (0, import_obsidian.normalizePath)(this.settings.eventFolder.split("/").slice(0, -1).concat("README.md").join("/"));
       if (!this.app.vault.getAbstractFileByPath(readmePath)) {
         try {
-          await this.app.vault.create(readmePath, AGENDA_README);
+          await this.app.vault.create(readmePath, agendaReadme(this.getLanguage?.() || this.settings.locale));
         } catch (e) {
         }
       }
       const histPath = (0, import_obsidian.normalizePath)(this.settings.historyPath);
       if (!this.app.vault.getAbstractFileByPath(histPath)) {
         try {
-          await this.app.vault.create(histPath, HISTORIAL_SEED);
+          await this.app.vault.create(histPath, historySeed(this.getLanguage?.() || this.settings.locale));
         } catch (e) {
         }
       }
@@ -694,19 +711,19 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       if (tipo !== "horario" || estado !== "activo") continue;
       const rows = parsePipeTable(parsed.body || content);
       for (const row of rows) {
-        const diaKey = normalizeDiaKey(row["dia"] || row["d\xEDa"] || "");
+        const diaKey = normalizeDiaKey(row["day"] || row["dia"] || row["d\xEDa"] || "");
         const weekday = DIA_INDEX[diaKey];
         if (weekday == null) continue;
-        const ini = parseHm(row.inicio);
-        const fin = parseHm(row.fin);
+        const ini = parseHm(row.start || row.inicio);
+        const fin = parseHm(row.end || row.fin);
         if (!ini || !fin) continue;
         for (let d = startOfDay(rangeStart); d < rangeEnd; d = addDays(d, 1)) {
           if (d.getDay() !== weekday) continue;
           const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), ini.h, ini.min, 0);
           const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), fin.h, fin.min, 0);
-          const ramo = row.ramo || "Horario";
-          const sala = row.sala || "";
-          const tipoBloque = row.tipo || "Clase";
+          const ramo = row.course || row.ramo || ((this.getLanguage?.() || this.settings.locale) === "en" ? "Schedule" : "Horario");
+          const sala = row.room || row.sala || "";
+          const tipoBloque = row.type || row.tipo || ((this.getLanguage?.() || this.settings.locale) === "en" ? "Class" : "Clase");
           items.push({
             path: file.path,
             file,
@@ -743,7 +760,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   async createEvent(ev, opts) {
     const quiet = opts && opts.quiet;
     const path = await this.uniqueEventPath(ev);
-    const md = eventToMarkdown(ev, ev.body || "");
+    const md = eventToMarkdown(ev, ev.body || "", this.getLanguage?.() || this.settings.locale);
     const file = await this.app.vault.create(path, md);
     if (!quiet) {
       await this.appendHistory("creado", ev.titulo, path);
@@ -755,7 +772,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     const quiet = opts && opts.quiet;
     const prev = await this.app.vault.read(file);
     const prevBody = parseFrontmatter(prev).body;
-    const md = eventToMarkdown(ev, ev.body != null ? ev.body : prevBody);
+    const md = eventToMarkdown(ev, ev.body != null ? ev.body : prevBody, this.getLanguage?.() || this.settings.locale);
     await this.app.vault.modify(file, md);
     if (!quiet) {
       await this.appendHistory("actualizado", ev.titulo, file.path);
@@ -773,12 +790,16 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     let file = this.app.vault.getAbstractFileByPath(histPath);
     if (!(file instanceof import_obsidian.TFile)) {
       await this.ensureFolder(histPath.split("/").slice(0, -1).join("/"));
-      file = await this.app.vault.create(histPath, HISTORIAL_SEED);
+      file = await this.app.vault.create(histPath, historySeed(this.getLanguage?.() || this.settings.locale));
     }
     const now = /* @__PURE__ */ new Date();
     const stamp = formatDate(now) + " " + formatHumanTime(now);
-    const link = path ? " \xB7 [[" + path.replace(/\.md$/, "") + "|" + (titulo || "nota") + "]]" : "";
-    const line = "- " + stamp + " \xB7 " + action + " \xB7 " + (titulo || "") + link + "\n";
+    const english = (this.getLanguage?.() || this.settings.locale) === "en";
+    const actionLabels = english
+      ? { creado: "created", actualizado: "updated", eliminado: "deleted", recordatorio: "reminder" }
+      : {};
+    const link = path ? " \xB7 [[" + path.replace(/\.md$/, "") + "|" + (titulo || (english ? "note" : "nota")) + "]]" : "";
+    const line = "- " + stamp + " \xB7 " + (actionLabels[action] || action) + " \xB7 " + (titulo || "") + link + "\n";
     const content = await this.app.vault.read(file);
     const next = content.endsWith("\n") || content === "" ? content + line : content + "\n" + line;
     await this.app.vault.modify(file, next);
@@ -811,7 +832,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     const fecha = formatDate(start);
     const hora = formatHumanTime(start);
     const texto = String(ev.titulo || "Evento").replace(/\|/g, "/");
-    const row = "| unico | " + fecha + " | | " + hora + " | " + texto + " |";
+    const row = "| " + ((this.getLanguage?.() || this.settings.locale) === "en" ? "once" : "unico") + " | " + fecha + " | | " + hora + " | " + texto + " |";
     let content = await this.app.vault.read(file);
     if (!content.endsWith("\n")) content += "\n";
     content += row + "\n";
@@ -925,7 +946,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   async syncIcsFeed(feed, byGoogleId) {
     const res = await (0, import_obsidian.requestUrl)({ url: feed.url, method: "GET" });
     if (res.status >= 400) throw new Error("HTTP " + res.status);
-    const events = parseIcs(res.text || "");
+    const events = parseIcs(res.text || "", this.getLanguage?.() || this.settings.locale);
     let created = 0;
     let updated = 0;
     let seen = 0;
@@ -994,7 +1015,8 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       headers: { Authorization: "Bearer " + token }
     });
     if (res.status >= 400) {
-      throw new Error("HTTP " + res.status + " \u2014 token caducado o sin permiso (scope calendar.readonly).");
+      const english = (this.getLanguage?.() || this.settings.locale) === "en";
+      throw new Error("HTTP " + res.status + (english ? " — expired token or missing permission (calendar.readonly scope)." : " — token caducado o sin permiso (scope calendar.readonly)."));
     }
     const items = res.json && res.json.items || [];
     let created = 0;
@@ -1015,13 +1037,13 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
         end.setHours(23, 59, 0, 0);
       }
       const ev = {
-        titulo: item.summary || "(Sin t\xEDtulo)",
+        titulo: item.summary || ((this.getLanguage?.() || this.settings.locale) === "en" ? "(Untitled)" : "(Sin título)"),
         inicio: formatLocalISO(start),
         fin: formatLocalISO(end),
         origen: "google",
         googleId: item.id || "",
         googleCalendar: "External",
-        categoria: "Otro",
+        categoria: (this.getLanguage?.() || this.settings.locale) === "en" ? "Other" : "Otro",
         todoElDia: allDay,
         lugar: item.location || "",
         notaVinculada: ""
@@ -1072,7 +1094,9 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     return "created";
   }
 };
-var HISTORIAL_SEED = `---
+function historySeed(language = "es") {
+  const english = language === "en";
+  return `---
 tipo: historial-agenda
 estado: activo
 tags:
@@ -1080,11 +1104,12 @@ tags:
   - agenda
 ---
 
-# Historial de Unique Agenda
+# ${english ? "Unique Agenda history" : "Historial de Unique Agenda"}
 
-Las acciones de Unique Agenda (crear, editar, eliminar, importar) quedan registradas aqu\xED.
+${english ? "Unique Agenda actions (create, edit, delete, import) are recorded here." : "Las acciones de Unique Agenda (crear, editar, eliminar, importar) quedan registradas aquí."}
 
 `;
+}
 var AgendaView = class extends import_obsidian.ItemView {
   constructor(leaf, plugin) {
     super(leaf);
@@ -1148,7 +1173,7 @@ var AgendaView = class extends import_obsidian.ItemView {
     this.addLegend(legend, "local", "Eventos locales (borde)");
     this.addLegend(legend, "google", "Google / ICS (borde)");
     const note = legend.createSpan({ cls: "ua-legend-note" });
-    note.createSpan({ text: "Relleno = color personalizado (ramo / mapa) \xB7 Borde = origen" });
+    note.createSpan({ text: this.plugin.translate("Relleno = color personalizado (ramo / mapa) · Borde = origen") });
     const body = wrap.createDiv({ cls: "ua-body" });
     const items = await this.collectItems();
     this.alignSelectedDay();
@@ -1163,9 +1188,11 @@ var AgendaView = class extends import_obsidian.ItemView {
     const sw = s.createSpan({ cls: "ua-swatch " + kind });
     sw.style.setProperty("--ua-origen", originBorder(kind));
     sw.style.setProperty("--ua-custom", DEFAULT_CUSTOM);
-    s.createSpan({ text: label });
+    s.createSpan({ text: this.plugin.translate(label) });
   }
   renderToolbar(wrap) {
+    const language = this.plugin.getLanguage?.() || this.plugin.settings.locale || "es";
+    const english = language === "en";
     const bar = wrap.createDiv({ cls: "ua-toolbar" });
     const prev = bar.createEl("button", { cls: "ua-nav-btn", attr: { "aria-label": "Anterior" } });
     (0, import_obsidian.setIcon)(prev, "chevron-left");
@@ -1173,7 +1200,7 @@ var AgendaView = class extends import_obsidian.ItemView {
     const next = bar.createEl("button", { cls: "ua-nav-btn", attr: { "aria-label": "Siguiente" } });
     (0, import_obsidian.setIcon)(next, "chevron-right");
     next.addEventListener("click", () => this.shift(1));
-    const title = this.mode === "week" ? this.weekTitle() : MESES[this.cursor.getMonth()] + " " + this.cursor.getFullYear();
+    const title = this.mode === "week" ? this.weekTitle() : (english ? MONTHS_EN : MESES)[this.cursor.getMonth()] + " " + this.cursor.getFullYear();
     bar.createEl("h2", { text: title });
     bar.createEl("button", { text: "Hoy" }).addEventListener("click", () => {
       this.cursor = /* @__PURE__ */ new Date();
@@ -1208,11 +1235,11 @@ var AgendaView = class extends import_obsidian.ItemView {
     const feeds = this.plugin.getIcsFeeds().length;
     const auto = this.plugin.settings.autoSyncEnabled && feeds > 0;
     sync.setText(
-      "\xDAltima sync: " + formatSyncStamp(this.plugin.settings.lastSyncAt) + (auto ? " \xB7 auto " + clampSyncIntervalMinutes(this.plugin.settings.autoSyncIntervalMinutes) + " min" : feeds ? " \xB7 auto off" : " \xB7 sin ICS")
+      (english ? "Last sync: " : "Última sync: ") + formatSyncStamp(this.plugin.settings.lastSyncAt, language) + (auto ? " \xB7 auto " + clampSyncIntervalMinutes(this.plugin.settings.autoSyncIntervalMinutes) + " min" : feeds ? " \xB7 auto off" : (english ? " \xB7 no ICS" : " \xB7 sin ICS"))
     );
     sync.setAttr(
       "title",
-      this.plugin.settings.lastSyncError ? "\xDAltimo error: " + this.plugin.settings.lastSyncError : "Sincronizaci\xF3n ICS integrada (Ajustes \u2192 Unique Agenda). Independiente de Grok Bot."
+      this.plugin.settings.lastSyncError ? (english ? "Last error: " : "Último error: ") + this.plugin.settings.lastSyncError : this.plugin.translate("Sincronización ICS integrada (Ajustes → Unique Agenda). Independiente de Grok Bot.")
     );
   }
   toggleCalendarsPopover(anchor) {
@@ -1253,7 +1280,8 @@ var AgendaView = class extends import_obsidian.ItemView {
   weekTitle() {
     const start = startOfWeek(this.cursor, this.plugin.settings.weekStart || 1);
     const end = addDays(start, 6);
-    return start.getDate() + "\u2013" + end.getDate() + " " + MESES[end.getMonth()] + " " + end.getFullYear();
+    const english = (this.plugin.getLanguage?.() || this.plugin.settings.locale) === "en";
+    return start.getDate() + "\u2013" + end.getDate() + " " + (english ? MONTHS_EN : MESES)[end.getMonth()] + " " + end.getFullYear();
   }
   shift(dir) {
     if (this.mode === "week") this.cursor = addDays(this.cursor, dir * 7);
@@ -1268,11 +1296,12 @@ var AgendaView = class extends import_obsidian.ItemView {
     }).sort((x, y) => String(x.inicio).localeCompare(String(y.inicio)));
   }
   renderMonth(body, items) {
+    const english = (this.plugin.getLanguage?.() || this.plugin.settings.locale) === "en";
     const ws = this.plugin.settings.weekStart || 1;
     const grid = body.createDiv({ cls: "ua-month" });
     for (let i = 0; i < 7; i++) {
       const dow = (ws + i) % 7;
-      grid.createDiv({ cls: "ua-dow", text: DIAS_CORTOS[dow] });
+      grid.createDiv({ cls: "ua-dow", text: (english ? DAYS_SHORT_EN : DIAS_CORTOS)[dow] });
     }
     const monthStart = new Date(this.cursor.getFullYear(), this.cursor.getMonth(), 1);
     let day = startOfWeek(monthStart, ws);
@@ -1289,7 +1318,7 @@ var AgendaView = class extends import_obsidian.ItemView {
       const nEv = dayItems.length;
       cell.setAttr(
         "title",
-        nEv ? nEv + (nEv === 1 ? " evento" : " eventos") + " \u2014 clic para ver el d\xEDa" : "Clic para ver el d\xEDa"
+        nEv ? nEv + (nEv === 1 ? (english ? " event" : " evento") : (english ? " events" : " eventos")) + (english ? " — click to view the day" : " — clic para ver el día") : (english ? "Click to view the day" : "Clic para ver el día")
       );
       cell.addEventListener("click", () => this.selectDay(cellDate));
       cell.addEventListener("dblclick", (evt) => {
@@ -1315,10 +1344,10 @@ var AgendaView = class extends import_obsidian.ItemView {
       const dot = row.createSpan({ cls: "ua-dot " + kind });
       const colors = applyDualColors(dot, ev, map);
       const a = parseLocalISO(ev.inicio);
-      const when = ev.todoElDia ? "Todo el d\xEDa" : a ? formatHumanTime(a) : "";
+      const when = ev.todoElDia ? this.plugin.translate("Todo el día") : a ? formatHumanTime(a) : "";
       dot.setAttr(
         "title",
-        (when ? when + " \xB7 " : "") + (ev.titulo || "Evento") + " \xB7 " + originLabel(kind) + " \xB7 relleno " + colors.fill + " \xB7 borde " + colors.border
+        (when ? when + " \xB7 " : "") + (ev.titulo || this.plugin.translate("Evento")) + " \xB7 " + this.plugin.translate(originLabel(kind)) + " \xB7 " + this.plugin.translate("relleno") + " " + colors.fill + " \xB7 " + (this.plugin.getLanguage?.() === "en" ? "border" : "borde") + " " + colors.border
       );
     });
     const more = signals.createDiv({ cls: "ua-dot-more" });
@@ -1344,6 +1373,7 @@ var AgendaView = class extends import_obsidian.ItemView {
     });
   }
   renderWeek(body, items) {
+    const english = (this.plugin.getLanguage?.() || this.plugin.settings.locale) === "en";
     const ws = this.plugin.settings.weekStart || 1;
     const start = startOfWeek(this.cursor, ws);
     const wrap = body.createDiv({ cls: "ua-week ua-week-compact" });
@@ -1355,7 +1385,7 @@ var AgendaView = class extends import_obsidian.ItemView {
       if (sameDay(d, /* @__PURE__ */ new Date())) col.addClass("is-today");
       if (selected && sameDay(d, selected)) col.addClass("is-selected");
       const head = col.createDiv({ cls: "ua-week-day-head" });
-      head.createEl("strong", { text: DIAS_CORTOS[d.getDay()] });
+      head.createEl("strong", { text: (english ? DAYS_SHORT_EN : DIAS_CORTOS)[d.getDay()] });
       head.createEl("em", { text: String(d.getDate()) });
       const dayItems = this.itemsOnDay(items, d);
       const signals = col.createDiv({ cls: "ua-week-signals" });
@@ -1374,19 +1404,19 @@ var AgendaView = class extends import_obsidian.ItemView {
           const a = parseLocalISO(ev.inicio);
           row.createSpan({
             cls: "ua-week-chip-time",
-            text: ev.todoElDia ? "Todo el d\xEDa" : a ? formatHumanTime(a) : ""
+            text: ev.todoElDia ? (english ? "All day" : "Todo el día") : a ? formatHumanTime(a) : ""
           });
-          row.setAttr("title", (ev.titulo || "Evento") + (ev.readonly ? " (Horario Unique, solo lectura)" : ""));
+          row.setAttr("title", (ev.titulo || (english ? "Event" : "Evento")) + (ev.readonly ? (english ? " (Unique schedule, read-only)" : " (Horario Unique, solo lectura)") : ""));
           row.addEventListener("click", (evt) => {
             evt.stopPropagation();
             this.openItem(ev);
           });
         });
         if (dayItems.length > MAX) {
-          signals.createDiv({ cls: "ua-week-more", text: "+" + (dayItems.length - MAX) + " m\xE1s" });
+          signals.createDiv({ cls: "ua-week-more", text: "+" + (dayItems.length - MAX) + (english ? " more" : " más") });
         }
       }
-      col.setAttr("title", "Clic para ver el d\xEDa");
+      col.setAttr("title", english ? "Click to view the day" : "Clic para ver el día");
       col.addEventListener("click", () => this.selectDay(d));
       col.addEventListener("contextmenu", (evt) => {
         evt.preventDefault();
@@ -1426,11 +1456,13 @@ var AgendaView = class extends import_obsidian.ItemView {
     }
   }
   renderDayPanel(parent, items, date) {
+    const language = this.plugin.getLanguage?.() || this.plugin.settings.locale || "es";
+    const english = language === "en";
     const panel = parent.createDiv({ cls: "ua-day-panel" });
     const day = startOfDay(date || this.selectedDay || /* @__PURE__ */ new Date());
     const head = panel.createDiv({ cls: "ua-day-panel-head" });
-    head.createEl("h3", { text: diaNombre(day) });
-    head.createEl("p", { cls: "ua-muted", text: formatHumanDate(day) });
+    head.createEl("h3", { text: diaNombre(day, language) });
+    head.createEl("p", { cls: "ua-muted", text: formatHumanDate(day, language) });
     if (sameDay(day, /* @__PURE__ */ new Date())) {
       head.createSpan({ cls: "ua-badge", text: "Hoy" });
     }
@@ -1450,7 +1482,7 @@ var AgendaView = class extends import_obsidian.ItemView {
     }
     list.createDiv({
       cls: "ua-day-count",
-      text: dayItems.length === 1 ? "1 evento" : dayItems.length + " eventos"
+      text: dayItems.length === 1 ? (english ? "1 event" : "1 evento") : dayItems.length + (english ? " events" : " eventos")
     });
     dayItems.forEach((ev) => this.renderDayItem(list, ev));
   }
@@ -1463,11 +1495,11 @@ var AgendaView = class extends import_obsidian.ItemView {
     const body = row.createDiv({ cls: "ua-day-item-body" });
     const a = parseLocalISO(ev.inicio);
     const b = parseLocalISO(ev.fin);
-    const time = ev.todoElDia ? "Todo el d\xEDa" : (a ? formatHumanTime(a) : "") + (b ? "\u2013" + formatHumanTime(b) : "");
+    const time = ev.todoElDia ? this.plugin.translate("Todo el día") : (a ? formatHumanTime(a) : "") + (b ? "\u2013" + formatHumanTime(b) : "");
     body.createDiv({ cls: "ua-day-item-time", text: time });
     body.createDiv({ cls: "ua-day-item-title", text: ev.titulo || "Evento" });
     const meta = body.createDiv({ cls: "ua-day-item-meta" });
-    meta.createSpan({ cls: "ua-badge ua-badge-" + kind, text: originLabel(kind) });
+    meta.createSpan({ cls: "ua-badge ua-badge-" + kind, text: this.plugin.translate(originLabel(kind)) });
     if (ev.lugar) meta.createSpan({ cls: "ua-muted", text: ev.lugar });
     if (ev.categoria && kind !== "horario") meta.createSpan({ cls: "ua-muted", text: ev.categoria });
     if (!ev.readonly && ev.file) {
@@ -1477,8 +1509,8 @@ var AgendaView = class extends import_obsidian.ItemView {
         evt.stopPropagation();
         new ConfirmModal(
           this.app,
-          "Eliminar evento",
-          "\xBFEliminar \xAB" + (ev.titulo || ev.file.basename) + "\xBB? La nota se enviar\xE1 a la papelera de Obsidian.",
+          this.plugin.translate("Eliminar evento"),
+          this.plugin.translate("¿Eliminar «" + (ev.titulo || ev.file.basename) + "»? La nota se enviará a la papelera de Obsidian."),
           async () => {
             await this.plugin.deleteEvent(ev.file, ev.titulo);
             this.render();
@@ -1492,16 +1524,16 @@ var AgendaView = class extends import_obsidian.ItemView {
   dayMenu(evt, date) {
     const menu = new import_obsidian.Menu();
     menu.addItem((item) => {
-      item.setTitle("Ver d\xEDa").setIcon("list").onClick(() => this.selectDay(date));
+      item.setTitle(this.plugin.translate("Ver día")).setIcon("list").onClick(() => this.selectDay(date));
     });
     menu.addItem((item) => {
-      item.setTitle("Nuevo evento").setIcon("plus").onClick(() => this.openCreate(date, 9 * 60));
+      item.setTitle(this.plugin.translate("Nuevo evento")).setIcon("plus").onClick(() => this.openCreate(date, 9 * 60));
     });
     menu.addItem((item) => {
-      item.setTitle("Abrir diario de Unique").setIcon("calendar").onClick(() => this.plugin.openDiario(date));
+      item.setTitle(this.plugin.translate("Abrir diario de Unique")).setIcon("calendar").onClick(() => this.plugin.openDiario(date));
     });
     menu.addItem((item) => {
-      item.setTitle("Ver semana").setIcon("calendar-clock").onClick(() => {
+      item.setTitle(this.plugin.translate("Ver semana")).setIcon("calendar-clock").onClick(() => {
         this.cursor = date;
         this.selectedDay = startOfDay(date);
         this.mode = "week";
@@ -1509,7 +1541,7 @@ var AgendaView = class extends import_obsidian.ItemView {
       });
     });
     menu.addItem((item) => {
-      item.setTitle("Ver mes").setIcon("calendar-days").onClick(() => {
+      item.setTitle(this.plugin.translate("Ver mes")).setIcon("calendar-days").onClick(() => {
         this.cursor = new Date(date.getFullYear(), date.getMonth(), 1);
         this.selectedDay = startOfDay(date);
         this.mode = "month";
@@ -1561,7 +1593,7 @@ var EventModal = class extends import_obsidian.Modal {
   onOpen() {
     const ev = this.seed;
     const isEdit = Boolean(ev.file);
-    this.titleEl.setText(isEdit ? "Editar evento" : "Nuevo evento");
+    this.titleEl.setText(this.plugin.translate(isEdit ? "Editar evento" : "Nuevo evento"));
     const root = this.contentEl;
     root.empty();
     root.addClass("ua-modal");
@@ -1569,27 +1601,28 @@ var EventModal = class extends import_obsidian.Modal {
     if (ev.origen && ev.origen !== "local") {
       form.createDiv({ cls: "ua-badge", text: ev.origen });
     }
-    const t = this.field(form, "T\xEDtulo");
+    const t = this.field(form, this.plugin.translate("Título"));
     const titulo = t.createEl("input");
     titulo.type = "text";
     titulo.value = ev.titulo || "";
-    titulo.placeholder = "Nombre del evento";
+    titulo.placeholder = this.plugin.translate("Nombre del evento");
     const row = form.createDiv({ cls: "ua-field-row" });
-    const iniWrap = this.field(row, "Inicio");
+    const iniWrap = this.field(row, this.plugin.translate("Inicio"));
     const inicio = iniWrap.createEl("input");
     inicio.type = "datetime-local";
     inicio.value = toDatetimeLocal(parseLocalISO(ev.inicio) || /* @__PURE__ */ new Date());
-    const finWrap = this.field(row, "Fin");
+    const finWrap = this.field(row, this.plugin.translate("Fin"));
     const fin = finWrap.createEl("input");
     fin.type = "datetime-local";
     fin.value = toDatetimeLocal(parseLocalISO(ev.fin) || /* @__PURE__ */ new Date());
-    const catWrap = this.field(form, "Categor\xEDa");
+    const catWrap = this.field(form, this.plugin.translate("Categoría"));
     const cat = catWrap.createEl("select");
     CATEGORIAS.forEach((c) => {
-      const opt = cat.createEl("option", { text: c, value: c });
-      if (c === (ev.categoria || "Otro")) opt.selected = true;
+      const localizedCategory = this.plugin.translate(c);
+      const opt = cat.createEl("option", { text: localizedCategory, value: localizedCategory });
+      if (localizedCategory === this.plugin.translate(ev.categoria || "Otro")) opt.selected = true;
     });
-    const colorWrap = this.field(form, "Color personalizado (relleno)");
+    const colorWrap = this.field(form, this.plugin.translate("Color personalizado (relleno)"));
     colorWrap.createDiv({
       cls: "ua-muted",
       text: "El centro/relleno usa este color o el mapa de ramos. El borde indica el origen (local/horario/Google)."
@@ -1599,7 +1632,7 @@ var EventModal = class extends import_obsidian.Modal {
     if (!ev.color) autoOpt.selected = true;
     GOOGLE_PALETTE.forEach((p) => {
       const opt = colorSel.createEl("option", {
-        text: p.id + " \xB7 " + p.name + " (" + p.hex + ")",
+        text: p.id + " \xB7 " + this.plugin.translate(p.name) + " (" + p.hex + ")",
         value: p.hex
       });
       if (String(ev.color || "").toLowerCase() === p.hex.toLowerCase()) opt.selected = true;
@@ -1630,7 +1663,7 @@ var EventModal = class extends import_obsidian.Modal {
       const border = originBorder(originKind(ev));
       colorPreview.style.setProperty("--ua-custom", fill);
       colorPreview.style.setProperty("--ua-origen", border);
-      colorPreview.setText("Vista: relleno " + fill + " \xB7 borde origen");
+      colorPreview.setText(this.plugin.getLanguage?.() === "en" ? "Preview: fill " + fill + " · source border" : "Vista: relleno " + fill + " · borde origen");
     };
     colorSel.addEventListener("change", paintPreview);
     const lugWrap = this.field(form, "Lugar (opcional)");
@@ -1649,8 +1682,8 @@ var EventModal = class extends import_obsidian.Modal {
       del.addEventListener("click", () => {
         new ConfirmModal(
           this.app,
-          "Eliminar evento",
-          "\xBFEliminar \xAB" + (ev.titulo || ev.file.basename) + "\xBB? La nota se enviar\xE1 a la papelera de Obsidian.",
+          this.plugin.translate("Eliminar evento"),
+          this.plugin.translate("¿Eliminar «" + (ev.titulo || ev.file.basename) + "»? La nota se enviará a la papelera de Obsidian."),
           async () => {
             await this.plugin.deleteEvent(ev.file, ev.titulo);
             this.close();
@@ -1820,8 +1853,9 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
     const syncStatus = containerEl.createEl("p", { cls: "ua-muted ua-sync-status" });
     const last = this.plugin.settings.lastSyncAt;
     const err = this.plugin.settings.lastSyncError;
+    const language = this.plugin.getLanguage?.() || this.plugin.settings.locale || "es";
     syncStatus.setText(
-      "\xDAltima sync: " + formatSyncStamp(last) + (err ? " \xB7 \xDAltimo error: " + err : "")
+      (language === "en" ? "Last sync: " : "Última sync: ") + formatSyncStamp(last, language) + (err ? (language === "en" ? " · Last error: " : " · Último error: ") + err : "")
     );
     const saveExternalCalendars = async (hadFeeds = this.plugin.getIcsFeeds().length > 0) => {
       const hasFeeds = this.plugin.getIcsFeeds().length > 0;
@@ -1941,7 +1975,9 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
     this.plugin.localizeSettings?.(containerEl);
   }
 };
-var AGENDA_README = `---
+function agendaReadme(language = "es") {
+  const english = language === "en";
+  return `---
 tipo: sistema
 estado: activo
 tags:
@@ -1951,52 +1987,53 @@ tags:
 
 # Unique Agenda
 
-Plugin hermano de Unique. Unique sigue cubriendo inicio, captura, diario, horario semanal y recordatorios. Unique Agenda a\xF1ade **eventos con hora** al estilo Google Calendar.
+${english ? "Unique's companion module. Unique continues to provide Home, capture, daily notes, the weekly schedule, and reminders. Unique Agenda adds Google Calendar-style **timed events**." : "Plugin hermano de Unique. Unique sigue cubriendo inicio, captura, diario, horario semanal y recordatorios. Unique Agenda añade **eventos con hora** al estilo Google Calendar."}
 
-## Carpetas
+## ${english ? "Folders" : "Carpetas"}
 
-- \`Sistema/Agenda/Eventos/\` \u2014 una nota Markdown por evento
-- \`Sistema/Agenda/Historial.md\` \u2014 registro de altas, cambios y bajas
+- \`Sistema/Agenda/Eventos/\` — ${english ? "one Markdown note per event" : "una nota Markdown por evento"}
+- \`Sistema/Agenda/Historial.md\` — ${english ? "log of created, changed, and deleted events" : "registro de altas, cambios y bajas"}
 
-## Esquema YAML de un evento
+## ${english ? "Event YAML schema" : "Esquema YAML de un evento"}
 
 \`\`\`yaml
 ---
 tipo: evento
-titulo: Estudio C\xE1lculo I
+titulo: ${english ? "Calculus I Study" : "Estudio Cálculo I"}
 inicio: 2026-09-04T18:00:00
 fin: 2026-09-04T20:00:00
 origen: local
 googleId:
 notaVinculada:
-categoria: Estudio
+categoria: ${english ? "Study" : "Estudio"}
 color: "#5484ed"
 ---
 \`\`\`
 
-Campos:
+${english ? "Fields" : "Campos"}:
 
-- **tipo**: siempre \`evento\`
-- **titulo**: nombre visible
-- **inicio** / **fin**: fecha-hora local ISO (\`YYYY-MM-DDTHH:MM:SS\`), sin Z
-- **origen**: \`local\` | \`google\` | (el horario de Unique se pinta en el calendario pero no se guarda aqu\xED)
-- **googleId**: id del evento remoto si viene de Google/ICS
-- **googleCalendar**: etiqueta de origen del calendario externo
-- **notaVinculada**: ruta opcional a un apunte
-- **categoria**: \`Clase\` | \`Lectura\` | \`Estudio\` | \`Control\` | \`Prueba\` | \`Otro\`
-- **color**: hex opcional del relleno personalizado (si falta, se busca en el mapa por t\xEDtulo/ramo)
+- **tipo**: ${english ? "always" : "siempre"} \`evento\`
+- **titulo**: ${english ? "visible name" : "nombre visible"}
+- **inicio** / **fin**: ${english ? "local ISO date-time (`YYYY-MM-DDTHH:MM:SS`), without Z" : "fecha-hora local ISO (`YYYY-MM-DDTHH:MM:SS`), sin Z"}
+- **origen**: \`local\` | \`google\` | ${english ? "(the Unique schedule is displayed in the calendar but is not stored here)" : "(el horario de Unique se pinta en el calendario pero no se guarda aquí)"}
+- **googleId**: ${english ? "remote event id when imported from Google/ICS" : "id del evento remoto si viene de Google/ICS"}
+- **googleCalendar**: ${english ? "source label for the external calendar" : "etiqueta de origen del calendario externo"}
+- **notaVinculada**: ${english ? "optional path to a note" : "ruta opcional a un apunte"}
+- **categoria**: ${english ? "`Class` | `Reading` | `Study` | `Quiz` | `Test` | `Other`" : "`Clase` | `Lectura` | `Estudio` | `Control` | `Prueba` | `Otro`"}
+- **color**: ${english ? "optional custom fill hex (when absent, the title/course color map is used)" : "hex opcional del relleno personalizado (si falta, se busca en el mapa por título/ramo)"}
 
-## Colores duales
+## ${english ? "Dual colors" : "Colores duales"}
 
-- **Relleno / centro** = color personalizado (mapa de ramos / \`color\` en YAML)
-- **Borde / periferia** = origen: horario (cian), local (azul), Google/ICS (naranja)
+- **${english ? "Fill / center" : "Relleno / centro"}** = ${english ? "custom color (course map / `color` in YAML)" : "color personalizado (mapa de ramos / `color` en YAML)"}
+- **${english ? "Border / edge" : "Borde / periferia"}** = ${english ? "source: schedule (cyan), local (blue), Google/ICS (orange)" : "origen: horario (cian), local (azul), Google/ICS (naranja)"}
 
-## Relaci\xF3n con Unique
+## ${english ? "Relationship with Unique" : "Relación con Unique"}
 
-- El \`Horario.md\` activo (\`tipo: horario\`, \`estado: activo\`) se muestra en Unique Agenda como bloques de solo lectura.
-- Desde un evento puedes a\xF1adir una fila a \`Sistema/Recordatorios.md\`.
-- Clic en un d\xEDa abre el panel con sus eventos (puntos en el mes, no t\xEDtulos). Desde ah\xED puedes crear uno nuevo o abrir el diario \`Diario/YYYY-MM/YYYY-MM-DD.md\` si existe.
+- ${english ? "The active `Horario.md` (`tipo: horario`, `estado: activo`) appears in Unique Agenda as read-only blocks." : "El `Horario.md` activo (`tipo: horario`, `estado: activo`) se muestra en Unique Agenda como bloques de solo lectura."}
+- ${english ? "An event can add a row to `Sistema/Recordatorios.md`." : "Desde un evento puedes añadir una fila a `Sistema/Recordatorios.md`."}
+- ${english ? "Selecting a day opens its event panel (dots in the month view, not titles). From there you can create an event or open `Diario/YYYY-MM/YYYY-MM-DD.md` when it exists." : "Clic en un día abre el panel con sus eventos (puntos en el mes, no títulos). Desde ahí puedes crear uno nuevo o abrir el diario `Diario/YYYY-MM/YYYY-MM-DD.md` si existe."}
 
-No edites Unique desde este plugin. El horario se cambia en la tabla de Unique.
+${english ? "Do not edit Unique from this module. Change the schedule in Unique's schedule table." : "No edites Unique desde este plugin. El horario se cambia en la tabla de Unique."}
 `;
+}
 var main_default = UniqueAgendaPlugin;

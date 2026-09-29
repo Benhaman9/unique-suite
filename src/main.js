@@ -130,6 +130,7 @@ module.exports = class UniqueSuitePlugin extends Plugin {
     if (this.agenda?.settings) {
       this.agenda.settings.locale = this.language;
       await this.agenda.saveSettings?.();
+      this.agenda.refreshViews?.();
     }
 
     this.app.workspace.getLeavesOfType("inicio-personalizado-view").forEach((leaf) => leaf.view?.render?.());

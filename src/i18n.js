@@ -50,6 +50,8 @@ const spanishToEnglish = {
   "Módulo": "Module",
   "Semana": "Week",
   "Estudio": "Study",
+  "Control": "Quiz",
+  "Prueba": "Test",
   "Nuevo tipo (ej. Control, Taller, Laboratorio)": "New type (e.g. Quiz, Workshop, Laboratory)",
   "+ Añadir": "+ Add",
   "Mantenimiento y Sincronización": "Maintenance and synchronization",
@@ -272,6 +274,97 @@ const spanishToEnglish = {
   "Solo si no usas ICS. Access token de prueba (caduca ~1 h). Client ID/secret son marcadores para OAuth futuro. Se guardan en data.json — no los subas a git.": "Only if you do not use ICS. Test access token (expires in about one hour). Client ID and secret are placeholders for future OAuth. They are stored in data.json; do not commit them.",
   "Token OAuth con scope https://www.googleapis.com/auth/calendar.readonly. Caduca; no es un flujo permanente.": "OAuth token with https://www.googleapis.com/auth/calendar.readonly scope. It expires and is not a permanent flow.",
   "Por defecto OFF (seguro). Si lo activas, tras cada sync se envían a la papelera las notas origen:google de ese calendario cuya googleId ya no aparece en el ICS, solo dentro de una ventana de −30 / +90 días. No borra eventos locales ni fuera de ventana.": "Default OFF (safe). When enabled, after each sync, Google-source notes whose googleId is no longer present in that calendar's ICS are moved to the trash, only within a −30 / +90 day window. Local and out-of-window events are not removed.",
+  "¿Qué ramo es?": "Which course is it?",
+  "Según tu horario:": "According to your schedule:",
+  "Buscar ramo": "Search courses",
+  "No encontré ese ramo.": "That course was not found.",
+  "Sugerido": "Suggested",
+  "No se pudo abrir el formulario": "The form could not be opened",
+  "Falló el formulario de clase. El detalle quedó visible en el cuadro.": "The class form failed. Details are shown in the dialog.",
+  "Escribe el nuevo tipo de apunte predeterminado (ej. Taller, Control, Laboratorio):": "Enter the new default note type (e.g. Workshop, Quiz, Laboratory):",
+  "El número no es válido.": "The number is not valid.",
+  "Escribe el nombre del apunte para usar Otro.": "Enter the note type name to use Other.",
+  "Conectar con versión paralela de IA": "Connect to parallel AI version",
+  "Nota actual:": "Current note:",
+  "No se encontraron apuntes candidatos en la misma carpeta.": "No candidate notes were found in the same folder.",
+  "Ej. Preguntar por la demostración del teorema...": "E.g. Ask about the theorem proof...",
+  "Crear nuevo semestre": "Create new semester",
+  "Crea la estructura del semestre con carpeta de cursos y plantilla de horario.": "Create the semester structure with a courses folder and schedule template.",
+  "Primer semestre (1)": "First semester (1)",
+  "Segundo semestre (2)": "Second semester (2)",
+  "Crear semestre": "Create semester",
+  "Ej. Econometría I": "E.g. Econometrics I",
+  "Ej. Rodrigo Fuentes": "E.g. Jane Smith",
+  "Ej. RF": "E.g. JS",
+  "Ej. Claude": "E.g. Claude",
+  "Se antepone al nombre de cada apunte: (PREFIJO) Clase 1": "Added before each note name: (PREFIX) Class 1",
+  "Por favor completa el nombre, profesor y prefijo.": "Please enter the course name, professor, and prefix.",
+  "Consulta los comandos de Unique y las teclas que tienes asignadas en Obsidian.": "Browse Unique commands and the keys assigned to them in Obsidian.",
+  "Buscar comando o atajo…": "Search commands or shortcuts…",
+  "Configurar en Obsidian": "Configure in Obsidian",
+  "No hay coincidencias.": "No matches.",
+  "Sin asignar": "Unassigned",
+  "No se encontró el archivo de horario.": "The schedule file was not found.",
+  "Nota diaria": "Daily note",
+  "Tiene tareas": "Has tasks",
+  "Mes anterior": "Previous month",
+  "Mes siguiente": "Next month",
+  "Unique no pudo cargar el Calendar original integrado; usará el calendario de respaldo.": "Unique could not load the bundled original Calendar; the fallback calendar will be used.",
+  "Enviar captura rápida a un ramo": "Send quick capture to a course",
+  "Conectar con apunte paralelo de IA / humano (Ctrl+Shift+I)": "Connect to parallel AI / human note (Ctrl+Shift+I)",
+  "Reparar y sincronizar todas las conexiones de la bóveda": "Repair and synchronize all vault connections",
+  "Abre primero la nota que deseas conectar.": "Open the note you want to connect first.",
+  "La nota no pertenece a una carpeta válida.": "The note is not inside a valid folder.",
+  "Iniciando revisión y sincronización de toda la bóveda…": "Starting vault-wide review and synchronization…",
+  "No hay ninguna nota activa para marcar.": "There is no active note to mark.",
+  "Propiedades actualizadas, pero ya existe una nota con ese nombre.": "Properties were updated, but a note with that name already exists.",
+  "Recordatorios revisados.": "Reminders checked.",
+  "Ese apunte ya existía; reparé sus enlaces y lo abrí.": "That note already existed; its links were repaired and it was opened.",
+  "Todavía no has creado ninguna clase.": "You have not created any classes yet.",
+  "La última clase registrada ya no existe.": "The last recorded class no longer exists.",
+  "Abre la nota donde quieres guardar la captura rápida.": "Open the note where you want to save the quick capture.",
+  "Abre una nota de captura rápida antes de enviarla a un ramo.": "Open a quick-capture note before sending it to a course.",
+  "Abre un apunte o crea uno antes de insertar el cierre.": "Open or create a note before inserting the class wrap-up.",
+  "Este apunte ya tiene cierre de clase.": "This note already has a class wrap-up.",
+  "Cierre de clase insertado.": "Class wrap-up inserted.",
+  "No hay ninguna nota activa.": "There is no active note.",
+  "Esta nota ya es la nota del día.": "This note is already today's note.",
+  "Horario Unique (borde)": "Unique schedule (border)",
+  "Eventos locales (borde)": "Local events (border)",
+  "Google / ICS (borde)": "Google / ICS (border)",
+  "Relleno = color personalizado (ramo / mapa) · Borde = origen": "Fill = custom color (course / map) · Border = source",
+  "Mostrar u ocultar capas (Horario, locales, Google)": "Show or hide layers (schedule, local, Google)",
+  "Sin eventos": "No events",
+  "Ver día": "View day",
+  "Abrir diario": "Open daily note",
+  "Lugar (opcional)": "Location (optional)",
+  "Nota vinculada (ruta o nombre, opcional)": "Linked note (path or name, optional)",
+  "Color personalizado (relleno)": "Custom color (fill)",
+  "Automático (mapa / título)": "Automatic (map / title)",
+  "Añadir a Recordatorios": "Add to Reminders",
+  "Vista:": "Preview:",
+  "relleno": "fill",
+  "borde origen": "source border",
+  "Actual": "Current",
+  "Mapa": "Map",
+  "nunca": "never",
+  "sin ICS": "no ICS",
+  "Evento": "Event",
+  "Evento importado": "Imported event",
+  "Lugar": "Location",
+  "Lavanda": "Lavender",
+  "Salvia": "Sage",
+  "Uva": "Grape",
+  "Flamingo": "Flamingo",
+  "Banana": "Banana",
+  "Pavo real": "Peacock",
+  "Grafito": "Graphite",
+  "Arándano": "Blueberry",
+  "Albahaca": "Basil",
+  "Tomate": "Tomato",
+  "Abrir Unique Agenda": "Open Unique Agenda",
+  "Unique Suite: error en Unique — revisa la consola.": "Unique Suite: Unique error — check the console.",
+  "Unique Suite: error en Agenda — revisa la consola.": "Unique Suite: Agenda error — check the console.",
 };
 
 const englishToSpanish = Object.fromEntries(
@@ -285,7 +378,11 @@ function normalizeLanguage(language) {
 function translate(value, language) {
   if (typeof value !== "string") return value;
   const table = normalizeLanguage(language) === "en" ? spanishToEnglish : englishToSpanish;
-  let translated = table[value] || value;
+  const whitespace = value.match(/^(\s*)([\s\S]*?)(\s*)$/);
+  const prefix = whitespace?.[1] || "";
+  const core = whitespace?.[2] ?? value;
+  const suffix = whitespace?.[3] || "";
+  let translated = table[core] || core;
   if (normalizeLanguage(language) === "en") {
     translated = translated.replace(/^Semestre (.+)$/, "Semester $1");
     translated = translated.replace(/^(\d+) ramos$/, "$1 courses");
@@ -301,8 +398,32 @@ function translate(value, language) {
     translated = translated.replace(/^Sync Google: (\d+) cambio\(s\), (\d+) evento\(s\) vistos\.$/, "Google sync: $1 change(s), $2 event(s) found.");
     translated = translated.replace(/^Sync Google: sin cambios \((\d+) evento\(s\) vistos\)\.$/, "Google sync: no changes ($1 event(s) found).");
     translated = translated.replace(/^Error al sincronizar Google Calendar: (.+)$/, "Google Calendar sync error: $1");
+    translated = translated.replace(/^Según tu horario: (.+)$/, "According to your schedule: $1");
+    translated = translated.replace(/^Nota actual: (.+)$/, "Current note: $1");
+    translated = translated.replace(/^No se pudo completar la operación: (.+)$/, "The operation could not be completed: $1");
+    translated = translated.replace(/^No se pudo crear el apunte: (.+)$/, "The note could not be created: $1");
+    translated = translated.replace(/^No hay ramos configurados para (.+)\.$/, "No courses are configured for $1.");
+    translated = translated.replace(/^Limpieza completa: (\d+) notas diarias vacías eliminadas\.$/, "Cleanup complete: $1 empty daily notes deleted.");
+    translated = translated.replace(/^Semestre activo actualizado a: (.+)$/, "Active semester updated to: $1");
+    translated = translated.replace(/^Semestre (.+) creado correctamente\.$/, "Semester $1 created successfully.");
+    translated = translated.replace(/^Ramo "(.+)" añadido a (.+)\.$/, 'Course "$1" added to $2.');
+    translated = translated.replace(/^Conexión bidireccional lista:\n(.+)$/, "Bidirectional connection ready:\n$1");
+    translated = translated.replace(/^Nota diaria \((.+)\) eliminada automáticamente porque ya no tenía apuntes\.$/, "Daily note ($1) was deleted automatically because it no longer contained notes.");
+    translated = translated.replace(/^Apunte marcado como desarrollado con IA: (.+)\.$/, "Note marked as developed with AI: $1.");
+    translated = translated.replace(/^\[Recordatorio\] (.+)$/, "[Reminder] $1");
+    translated = translated.replace(/^No se pudo crear la captura rápida: (.+)$/, "The quick capture could not be created: $1");
+    translated = translated.replace(/^Captura rápida enviada a (.+)\.$/, "Quick capture sent to $1.");
+    translated = translated.replace(/^Nota vinculada con hoy \((.+)\)\.$/, "Note linked to today ($1).");
+    translated = translated.replace(/^(.+) \(Activo\)$/, "$1 (Active)");
+    translated = translated.replace(/^(\d+) evento$/, "$1 event");
+    translated = translated.replace(/^(\d+) eventos$/, "$1 events");
+    translated = translated.replace(/^\+(\d+) más$/, "+$1 more");
+    translated = translated.replace(/^¿Eliminar «(.+)»\? La nota se enviará a la papelera de Obsidian\.$/, "Delete “$1”? The note will be moved to the Obsidian trash.");
+    translated = translated.replace(/^Vista: relleno (.+) · borde origen$/, "Preview: fill $1 · source border");
+    translated = translated.replace(/^Última sync: (.+) · Último error: (.+)$/, "Last sync: $1 · Last error: $2");
+    translated = translated.replace(/^Última sync: (.+)$/, "Last sync: $1");
   }
-  return translated;
+  return `${prefix}${translated}${suffix}`;
 }
 
 function translatePath(path, language) {
@@ -355,7 +476,10 @@ function translateElement(root, language) {
     const result = translate(node.nodeValue, language);
     if (result !== node.nodeValue) node.nodeValue = result;
   }
-  root.querySelectorAll?.("[title], [placeholder], [aria-label]").forEach((element) => {
+  const attributeElements = [];
+  if (root.matches?.("[title], [placeholder], [aria-label]")) attributeElements.push(root);
+  root.querySelectorAll?.("[title], [placeholder], [aria-label]").forEach((element) => attributeElements.push(element));
+  attributeElements.forEach((element) => {
     for (const attribute of ["title", "placeholder", "aria-label"]) {
       const value = element.getAttribute(attribute);
       const result = translate(value, language);
