@@ -892,7 +892,12 @@
   text-transform: capitalize;
 }
 
-.unique-calendar-view-legacy .year.svelte-1vwr9dd {
+.unique-calendar-view-legacy .title.svelte-1vwr9dd,
+.unique-calendar-view-legacy .title.svelte-1vwr9dd .month.svelte-1vwr9dd {
+  color: var(--text-normal);
+}
+
+.unique-calendar-view-legacy .title.svelte-1vwr9dd .year.svelte-1vwr9dd {
   color: var(--interactive-accent);
 }
 

@@ -3937,7 +3937,13 @@ function instance($$self, $$props, $$invalidate) {
 	let { onContextMenuWeek } = $$props;
 
 	function tick() {
-		$$invalidate(9, today = window.moment());
+		const nextToday = window.moment();
+		const shouldAdvanceMonth = today && displayedMonth &&
+			displayedMonth.isSame(today, "month") && !today.isSame(nextToday, "month");
+		if (shouldAdvanceMonth) {
+			$$invalidate(0, displayedMonth = nextToday.clone().startOf("month"));
+		}
+		$$invalidate(9, today = nextToday);
 	}
 
 	function getToday(settings) {
@@ -3949,16 +3955,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	// 1 minute heartbeat to keep `today` reflecting the current day
 	let heartbeat = setInterval(
-		() => {
-			tick();
-			const isViewingCurrentMonth = displayedMonth.isSame(today, "day");
-
-			if (isViewingCurrentMonth) {
-				// if it's midnight on the last day of the month, this will
-				// update the display to show the new month.
-				$$invalidate(0, displayedMonth = today);
-			}
-		},
+		tick,
 		1000 * 60
 	);
 

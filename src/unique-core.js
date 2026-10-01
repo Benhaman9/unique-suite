@@ -2323,6 +2323,7 @@ class UniqueCalendarView extends ItemView {
     super(leaf);
     this.plugin = plugin;
     this.displayedMonth = moment().startOf("month");
+    this.lastToday = moment();
     this.selectedId = null;
     this.linkedId = null;
     this.renderToken = 0;
@@ -2347,6 +2348,9 @@ class UniqueCalendarView extends ItemView {
     this.registerEvent(this.app.vault.on("create", () => this.render()));
     this.registerEvent(this.app.vault.on("delete", () => this.render()));
     this.registerEvent(this.app.vault.on("modify", () => this.render()));
+    this.registerInterval(window.setInterval(() => {
+      if (!this.lastToday.isSame(moment(), "day")) this.render();
+    }, 60 * 1000));
     this.registerEvent(
       this.app.workspace.on("file-open", () => this.updateActiveContext(true))
     );
@@ -2461,6 +2465,12 @@ class UniqueCalendarView extends ItemView {
   }
 
   async render() {
+    const nextToday = moment();
+    if (this.displayedMonth.isSame(this.lastToday, "month") &&
+        !this.lastToday.isSame(nextToday, "month")) {
+      this.displayedMonth = nextToday.clone().startOf("month");
+    }
+    this.lastToday = nextToday;
     const token = ++this.renderToken;
     const { contentEl } = this;
     contentEl.empty();

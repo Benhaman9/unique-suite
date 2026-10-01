@@ -1,12 +1,13 @@
 {
   "name": "unique-suite",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Obsidian community plugin: Unique + Unique Agenda in one install.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
     "build": "node esbuild.config.mjs production",
-    "test:i18n": "node scripts/check-i18n.js"
+    "test:i18n": "node scripts/check-i18n.js",
+    "test:calendar": "node scripts/check-calendar.js"
   },
   "keywords": [
     "obsidian-plugin",

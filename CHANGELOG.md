@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.9
+
+- **Calendar rollover:** advances the displayed current month when the local date crosses a month or year boundary, including daily-note refreshes and wake-up after inactivity. Preserves a different month selected manually, in both the original calendar and the fallback view.
+- **Calendar appearance:** consistently highlights the year with the theme accent color in both public and personalized calendars, keeping the month in the normal text color.
+- **Regression coverage:** adds `npm run test:calendar` for date transitions and optional verification of the personalized installation.
+
 ## 0.2.8
 
 - **English completeness:** localizes remaining interfaces, commands, notices, prompts, accessibility labels, dates, month/day names, relative dates, and dynamic status text.
