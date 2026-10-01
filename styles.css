@@ -897,7 +897,7 @@
   color: var(--text-normal);
 }
 
-.unique-calendar-view-legacy .title.svelte-1vwr9dd .year.svelte-1vwr9dd {
+#calendar-container .title.svelte-1vwr9dd .year.svelte-1vwr9dd {
   color: var(--interactive-accent);
 }
 

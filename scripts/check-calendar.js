@@ -61,6 +61,20 @@ for (const target of targets) {
   }
   const css = fs.readFileSync(target.css, 'utf8');
   assert.match(css, /\.title\.svelte-1vwr9dd \.month\.svelte-1vwr9dd \{\s*color: var\(--text-normal\);/);
-  assert.match(css, /\.title\.svelte-1vwr9dd \.year\.svelte-1vwr9dd \{\s*color: var\(--interactive-accent\);/);
+  const yearSelector = '#calendar-container .title.svelte-1vwr9dd .year.svelte-1vwr9dd';
+  assert.ok(css.includes(yearSelector + ' {\n  color: var(--interactive-accent);') ||
+    css.includes(yearSelector + ' {\r\n  color: var(--interactive-accent);'));
+  // Minimal uses #calendar-container .year. With equal ID specificity,
+  // our four classes beat its single class regardless of stylesheet order.
+  const specificity = selector => [
+    (selector.match(/#[\w-]+/g) || []).length,
+    (selector.match(/\.[\w-]+/g) || []).length,
+  ];
+  const actual = specificity(yearSelector);
+  const minimal = specificity('#calendar-container .year');
+  assert.equal(actual[0], minimal[0]);
+  assert.ok(actual[1] > minimal[1]);
+  // The original Svelte calendar has this ID, without the fallback view class.
+  assert.match(calendar, /attr\(div, "id", "calendar-container"\)/);
 }
 console.log(`Calendar regression checks passed: ${targets.length} variants, legacy and fallback, ${scenarios.length} date scenarios each.`);

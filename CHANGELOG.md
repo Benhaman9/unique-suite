@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10
+
+- **Calendar theme compatibility:** fixes the accent year in the original calendar as well as the fallback calendar. The selector now targets the shared calendar container and takes precedence over Minimal's normal text color rule.
+
 ## 0.2.9
 
 - **Calendar rollover:** advances the displayed current month when the local date crosses a month or year boundary, including daily-note refreshes and wake-up after inactivity. Preserves a different month selected manually, in both the original calendar and the fallback view.
