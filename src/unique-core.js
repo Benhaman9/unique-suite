@@ -2636,8 +2636,8 @@ module.exports = class UniquePlugin extends Plugin {
 
     this.addCommand({
       id: "captura-rapida",
-      name: "Captura rápida en el apunte actual",
-      callback: () => this.openQuickCapture(),
+      name: "Crear captura rápida en Inbox",
+      callback: () => this.openQuickCaptureInbox(),
     });
 
     this.addCommand({

@@ -10,6 +10,7 @@ const cases = new Map([
   ["Evento enviado a la papelera: Exam", "Event moved to trash: Exam"],
   ["¿Eliminar «Exam»? La nota se enviará a la papelera de Obsidian.", "Delete “Exam”? The note will be moved to the Obsidian trash."],
   ["Captura rápida enviada a Calculus.", "Quick capture sent to Calculus."],
+  ["Crear captura rápida en Inbox", "Create quick capture in Inbox"],
   ["Nota vinculada con hoy (2026-09-28).", "Note linked to today (2026-09-28)."],
   ["  Cancelar  ", "  Cancel  "],
 ]);

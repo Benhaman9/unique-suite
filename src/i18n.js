@@ -79,7 +79,7 @@ const spanishToEnglish = {
   "Abrir nota de hoy": "Open today's note",
   "Crear apunte de clase": "Create class note",
   "Reabrir última clase": "Reopen last class",
-  "Captura rápida en el apunte actual": "Quick capture in the current note",
+  "Crear captura rápida en Inbox": "Create quick capture in Inbox",
   "Insertar cierre rápido de clase": "Insert quick class wrap-up",
   "Vincular nota actual con el día de hoy": "Link current note to today",
   "Marcar fuente IA del apunte": "Mark note AI source",

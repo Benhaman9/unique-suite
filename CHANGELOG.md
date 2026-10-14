@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.11
+
+- **Quick capture shortcut:** the quick capture command now creates a new note in `01 Inbox`, matching the Home button. The existing shortcut assignment is preserved.
+
 ## 0.2.10
 
 - **Calendar theme compatibility:** fixes the accent year in the original calendar as well as the fallback calendar. The selector now targets the shared calendar container and takes precedence over Minimal's normal text color rule.
