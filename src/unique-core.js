@@ -392,42 +392,11 @@ function appendLineToSection(content, heading, line) {
 }
 
 function removeLinkFromContent(content, targetLinkPattern) {
-  const lines = content.split(/\r?\n/);
-  const filtered = [];
-  let modified = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (targetLinkPattern.test(line)) {
-      modified = true;
-      continue;
-    }
-    filtered.push(line);
-  }
-
-  if (!modified) return content;
-
-  const resultLines = [];
-  for (let i = 0; i < filtered.length; i++) {
-    const line = filtered[i];
-    if (/^##\s+/.test(line)) {
-      let hasSubContent = false;
-      for (let j = i + 1; j < filtered.length; j++) {
-        const nextLine = filtered[j].trim();
-        if (/^#{1,6}\s+/.test(nextLine)) break;
-        if (nextLine.length > 0) {
-          hasSubContent = true;
-          break;
-        }
-      }
-      if (!hasSubContent) {
-        continue;
-      }
-    }
-    resultLines.push(line);
-  }
-
-  return resultLines.join("\n").replace(/\n{3,}/g, "\n\n");
+  const links = new RegExp(targetLinkPattern.source, "gi");
+  return content.split(/\r?\n/).filter((line) => {
+    const remaining = line.replace(links, "");
+    return remaining === line || !/^\s*(?:[-*+]\s*)?$/.test(remaining);
+  }).map((line) => line.replace(links, "")).join("\n");
 }
 
 function isDailyNoteEmpty(content) {
@@ -3471,9 +3440,7 @@ tags:
   // ── Auto-limpieza al Eliminar una Nota ──
   async handleFileDeletion(deletedPath, deletedBase) {
     const targetLinkRegex = new RegExp(
-      `\\[\\[(?:${escapeRegExp(withoutExtension(deletedPath))}|${escapeRegExp(
-        deletedBase
-      )})(?:\\|[^\\]]*)?\\]\\]`,
+      `\\[\\[${escapeRegExp(withoutExtension(deletedPath))}(?:\\|[^\\]]*)?\\]\\]`,
       "i"
     );
 
@@ -3485,13 +3452,7 @@ tags:
       const content = await this.app.vault.read(daily);
       if (targetLinkRegex.test(content)) {
         const cleaned = removeLinkFromContent(content, targetLinkRegex);
-        if (isDailyNoteEmpty(cleaned)) {
-          await this.app.vault.delete(daily);
-          new Notice(
-            `Nota diaria (${daily.basename}) eliminada automáticamente porque ya no tenía apuntes.`,
-            5000
-          );
-        } else if (cleaned !== content) {
+        if (cleaned !== content) {
           await this.app.vault.modify(daily, cleaned);
         }
       }

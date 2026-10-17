@@ -55,6 +55,10 @@ Si usas otros nombres, ajústalos en Ajustes → Unique / Unique Agenda. Por def
 
 ## Google Calendar (ICS) y capas
 
+Requiere Obsidian 1.11.5 o posterior. Las URL privadas ICS y las credenciales se guardan en SecretStorage local de Obsidian; al actualizar, el plugin las migra desde `data.json`. Cada dispositivo necesita sus propios secretos. Las copias de seguridad o el historial de sincronización anteriores pueden conservar los valores antiguos. La eliminación automática de eventos ausentes del ICS está suspendida porque una respuesta incompleta podría borrar notas válidas.
+
+Al eliminar una nota, la limpieza de enlaces conserva el texto que la rodea y mantiene la nota diaria. Los enlaces abreviados con el mismo nombre se conservan para evitar afectar otra nota.
+
 1. En Google Calendar → configuración del calendario → **Secret address in iCal format**.
 2. Pega cada URL en Ajustes → Unique Agenda.
 3. Activa **auto-sync** si quieres sync periódica mientras Obsidian está abierto.

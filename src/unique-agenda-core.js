@@ -348,6 +348,8 @@ function parseFrontmatter(content) {
 }
 function eventToMarkdown(ev, body, language = "es") {
   const english = language === "en";
+  const plain = (value) => String(value || "").replace(/[\r\n]+/g, " ").trim();
+  const cleanBody = String(body || "").replace(/^\s*# [^\n]*\n\n(?:- (?:Lugar|Location): [^\n]*\n)?- (?:Inicio|Start): `[^\n]*`\n- (?:Fin|End): `[^\n]*`(?:\n- (?:Nota|Note): \[\[[^\n]*\]\])?(?:\n\n|$)/, "");
   const lines = [
     "---",
     "tipo: evento",
@@ -363,13 +365,13 @@ function eventToMarkdown(ev, body, language = "es") {
   if (ev.color) lines.push("color: " + quoteYaml(ev.color));
   if (ev.todoElDia) lines.push("todoElDia: true");
   if (ev.lugar) lines.push("lugar: " + quoteYaml(ev.lugar));
-  lines.push("---", "", "# " + (ev.titulo || (english ? "Event" : "Evento")), "");
-  if (ev.lugar) lines.push("- " + (english ? "Location" : "Lugar") + ": " + ev.lugar);
+  lines.push("---", "", "# " + plain(ev.titulo || (english ? "Event" : "Evento")), "");
+  if (ev.lugar) lines.push("- " + (english ? "Location" : "Lugar") + ": " + plain(ev.lugar));
   lines.push("- " + (english ? "Start" : "Inicio") + ": `" + ev.inicio + "`");
   lines.push("- " + (english ? "End" : "Fin") + ": `" + ev.fin + "`");
   if (ev.notaVinculada) lines.push("- " + (english ? "Note" : "Nota") + ": [[" + ev.notaVinculada + "]]");
   lines.push("");
-  if (body && body.trim()) lines.push(body.trim(), "");
+  if (cleanBody.trim()) lines.push(cleanBody.trim(), "");
   return lines.join("\n");
 }
 function fmToEvent(file, fm, body) {
@@ -502,6 +504,38 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       if (legacyUrls.length) this.settings.externalCalendars = [...new Set(legacyUrls)].map((url) => newExternalCalendar(url));
       migrated = true;
     }
+    const active = this.settings.externalCalendars.filter((calendar) => String(calendar?.url || "").trim());
+    const calendarIds = new Set();
+    const calendarLabels = new Set();
+    for (const [index, calendar] of this.settings.externalCalendars.entries()) {
+      if (!/^[a-z0-9-]{1,36}$/.test(String(calendar.id || "")) || calendarIds.has(calendar.id)) {
+        calendar.id = newExternalCalendar().id;
+        migrated = true;
+      }
+      calendarIds.add(calendar.id);
+      if (!calendar.syncLabel) {
+        const position = active.indexOf(calendar);
+        calendar.syncLabel = position >= 0 ? (active.length > 1 ? `External ${position + 1}` : "External") : `External ${calendar.id}`;
+        migrated = true;
+      }
+      if (calendarLabels.has(calendar.syncLabel)) {
+        calendar.syncLabel = `External ${calendar.id}`;
+        migrated = true;
+      }
+      calendarLabels.add(calendar.syncLabel);
+      const secretId = `unique-suite-agenda-calendar-${calendar.id}`;
+      const stored = this.app.secretStorage.getSecret(secretId);
+      const legacy = String(calendar.url || "").trim();
+      if (stored === null && legacy) this.app.secretStorage.setSecret(secretId, legacy);
+      calendar.url = stored ?? legacy;
+    }
+    for (const key of ["googleAccessToken", "googleClientSecret"]) {
+      const secretId = `unique-suite-agenda-${key.toLowerCase()}`;
+      const stored = this.app.secretStorage.getSecret(secretId);
+      const legacy = String(loaded[key] || "").trim();
+      if (stored === null && legacy) this.app.secretStorage.setSecret(secretId, legacy);
+      this.settings[key] = stored ?? legacy;
+    }
     if (this.resolveManagedPaths()) migrated = true;
     const clamped = clampSyncIntervalMinutes(this.settings.autoSyncIntervalMinutes);
     if (clamped !== this.settings.autoSyncIntervalMinutes) {
@@ -516,6 +550,10 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       this.settings.pruneMissingGoogle = false;
       migrated = true;
     }
+    if (this.settings.pruneMissingGoogle) {
+      this.settings.pruneMissingGoogle = false;
+      migrated = true;
+    }
     if (loaded.lastSyncAt === void 0) {
       this.settings.lastSyncAt = "";
       migrated = true;
@@ -524,7 +562,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       this.settings.lastSyncError = "";
       migrated = true;
     }
-    if (migrated) await this.saveSettings();
+    if (migrated || ["icsUrl", "icsUrls", "icsUrlClases", "icsUrlOficial", "icsUrlEspiritual", "icsUrlOther", "googleAccessToken", "googleClientSecret"].some((key) => Object.prototype.hasOwnProperty.call(loaded, key)) || this.settings.externalCalendars.some((calendar) => calendar.url)) await this.saveSettings();
     await this.ensureVaultScaffold();
     this.registerView(VIEW_TYPE, (leaf) => new AgendaView(leaf, this));
     this.addRibbonIcon("calendar", "Unique Agenda", () => {
@@ -571,9 +609,9 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   getIcsFeeds() {
     const calendars = Array.isArray(this.settings.externalCalendars) ? this.settings.externalCalendars : [];
     const active = calendars.filter((calendar) => String(calendar?.url || "").trim());
-    return active.map((calendar, index) => ({
-      key: String(calendar.id || `external-${index + 1}`),
-      label: active.length > 1 ? `External ${index + 1}` : "External",
+    return active.map((calendar) => ({
+      key: String(calendar.id),
+      label: String(calendar.syncLabel || `External ${calendar.id}`),
       url: String(calendar.url).trim()
     }));
   }
@@ -641,7 +679,19 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   }
   async saveSettings() {
     this.resolveManagedPaths();
-    await this.saveData(this.settings);
+    const persisted = { ...this.settings, externalCalendars: this.settings.externalCalendars.map(({ url, ...calendar }) => calendar) };
+    for (const key of ["icsUrl", "icsUrls", "icsUrlClases", "icsUrlOficial", "icsUrlEspiritual", "icsUrlOther", "googleAccessToken", "googleClientSecret"]) delete persisted[key];
+    await this.saveData(persisted);
+  }
+  async setSecretSetting(key, value) {
+    this.app.secretStorage.setSecret(`unique-suite-agenda-${key.toLowerCase()}`, value);
+    this.settings[key] = value;
+    await this.saveSettings();
+  }
+  async setCalendarUrl(calendar, value) {
+    this.app.secretStorage.setSecret(`unique-suite-agenda-calendar-${calendar.id}`, value);
+    calendar.url = value;
+    await this.saveSettings();
   }
 
   notice(message, timeout) {
@@ -891,7 +941,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     const existing = await this.loadEvents();
     const byGoogleId = /* @__PURE__ */ new Map();
     for (const ev of existing) {
-      if (ev.googleId) byGoogleId.set(String(ev.googleId), ev);
+      if (ev.googleId) byGoogleId.set(JSON.stringify([ev.googleCalendar || "", String(ev.googleId)]), ev);
     }
     if (feeds.length > 0) {
       for (const feed of feeds) {
@@ -902,8 +952,8 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
           pruned += r.pruned;
           seen += r.seen;
         } catch (err) {
-          console.error("ICS feed " + feed.label, err);
-          errors.push(feed.label + ": " + (err && err.message ? err.message : err));
+          console.error("ICS feed " + feed.label + " failed");
+          errors.push(feed.label + ": no se pudo sincronizar el feed");
         }
       }
     } else if (token) {
@@ -913,8 +963,8 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
         updated += r.updated;
         seen += r.seen;
       } catch (err) {
-        console.error(err);
-        errors.push(String(err && err.message ? err.message : err));
+        console.error("Google Calendar API sync failed");
+        errors.push("Google Calendar API: no se pudo sincronizar");
       }
     } else {
       return { created: 0, updated: 0, pruned: 0, seen: 0, changed: 0 };
@@ -947,6 +997,9 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     const res = await (0, import_obsidian.requestUrl)({ url: feed.url, method: "GET" });
     if (res.status >= 400) throw new Error("HTTP " + res.status);
     const events = parseIcs(res.text || "", this.getLanguage?.() || this.settings.locale);
+    if (!/BEGIN:VCALENDAR/i.test(res.text || "") || !/END:VCALENDAR/i.test(res.text || "") || events.length === 0) {
+      throw new Error("ICS vacío o inválido");
+    }
     let created = 0;
     let updated = 0;
     let seen = 0;
@@ -964,9 +1017,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       else if (status === "updated") updated += 1;
     }
     let pruned = 0;
-    if (this.settings.pruneMissingGoogle) {
-      pruned = await this.pruneMissingFromFeed(feed.label, seenIds, byGoogleId);
-    }
+    // A truncated ICS feed can still contain valid events. Never prune automatically.
     return { created, updated, pruned, seen };
   }
   /**
@@ -995,7 +1046,7 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
     for (const ev of toDelete) {
       try {
         await this.app.vault.trash(ev.file, true);
-        byGoogleId.delete(String(ev.googleId));
+        byGoogleId.delete(JSON.stringify([ev.googleCalendar || "", String(ev.googleId)]));
         pruned += 1;
       } catch (e) {
         console.error("prune", e);
@@ -1060,11 +1111,12 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
   async upsertImported(ev, byGoogleId) {
     const map = byGoogleId || null;
     const gid = ev.googleId ? String(ev.googleId) : "";
+    const mapKey = JSON.stringify([ev.googleCalendar || "", gid]);
     let hit = null;
-    if (gid && map) hit = map.get(gid) || null;
+    if (gid && map) hit = map.get(mapKey) || null;
     else if (gid) {
       const existing = await this.loadEvents();
-      hit = existing.find((x) => x.googleId && String(x.googleId) === gid) || null;
+      hit = existing.find((x) => x.googleId && String(x.googleId) === gid && String(x.googleCalendar || "") === String(ev.googleCalendar || "")) || null;
     }
     if (hit && hit.file) {
       const merged = {
@@ -1084,12 +1136,12 @@ var UniqueAgendaPlugin = class extends import_obsidian.Plugin {
       const same = String(hit.titulo || "") === String(merged.titulo || "") && String(hit.inicio || "") === String(merged.inicio || "") && String(hit.fin || "") === String(merged.fin || "") && String(hit.googleCalendar || "") === String(merged.googleCalendar || "") && String(hit.lugar || "") === String(merged.lugar || "") && !!hit.todoElDia === !!merged.todoElDia && String(hit.origen || "") === "google";
       if (same) return "unchanged";
       await this.updateEvent(hit.file, Object.assign({}, hit, merged), { quiet: true });
-      if (map && gid) map.set(gid, Object.assign({}, hit, merged, { file: hit.file, path: hit.path }));
+      if (map && gid) map.set(mapKey, Object.assign({}, hit, merged, { file: hit.file, path: hit.path }));
       return "updated";
     }
     const file = await this.createEvent(ev, { quiet: true });
     if (map && gid) {
-      map.set(gid, Object.assign({}, ev, { file, path: file.path }));
+      map.set(mapKey, Object.assign({}, ev, { file, path: file.path }));
     }
     return "created";
   }
@@ -1879,12 +1931,13 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
           t.inputEl.style.width = "100%";
           t.onChange(async (value) => {
             const hadFeeds = this.plugin.getIcsFeeds().length > 0;
-            calendar.url = value.trim();
+            await this.plugin.setCalendarUrl(calendar, value.trim());
             await saveExternalCalendars(hadFeeds);
           });
         }).addExtraButton((button) => {
           button.setIcon("trash-2").setTooltip("Eliminar calendario").onClick(async () => {
             const hadFeeds = this.plugin.getIcsFeeds().length > 0;
+            this.plugin.app.secretStorage.setSecret(`unique-suite-agenda-calendar-${calendar.id}`, "");
             this.plugin.settings.externalCalendars = calendars.filter((item) => item.id !== calendar.id);
             await saveExternalCalendars(hadFeeds);
             renderExternalCalendars();
@@ -1924,14 +1977,9 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
         commit();
       });
     });
-    new import_obsidian.Setting(containerEl).setName("Eliminar eventos Google ausentes del ICS").setDesc(
-      "Por defecto OFF (seguro). Si lo activas, tras cada sync se env\xEDan a la papelera las notas origen:google de ese calendario cuya googleId ya no aparece en el ICS, solo dentro de una ventana de \u221230 / +90 d\xEDas. No borra eventos locales ni fuera de ventana."
-    ).addToggle(
-      (t) => t.setValue(!!this.plugin.settings.pruneMissingGoogle).onChange(async (v) => {
-        this.plugin.settings.pruneMissingGoogle = v;
-        await this.plugin.saveSettings();
-      })
-    );
+    new import_obsidian.Setting(containerEl).setName("Eliminar eventos Google ausentes del ICS")
+      .setDesc("Poda automática suspendida: una respuesta ICS incompleta podría borrar eventos válidos.")
+      .addToggle((t) => t.setValue(false).setDisabled(true));
     new import_obsidian.Setting(containerEl).setName("Sincronizar ahora").setDesc("Igual que el comando \xABImportar desde Google Calendar\xBB. Muestra un aviso con el resultado.").addButton(
       (b) => b.setButtonText("Importar / sync").setCta().onClick(() => this.plugin.importFromGoogle())
     );
@@ -1955,8 +2003,7 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("OAuth client secret").addText((t) => {
       t.inputEl.type = "password";
       t.setValue(this.plugin.settings.googleClientSecret).onChange(async (v) => {
-        this.plugin.settings.googleClientSecret = v.trim();
-        await this.plugin.saveSettings();
+        await this.plugin.setSecretSetting("googleClientSecret", v.trim());
       });
     });
     new import_obsidian.Setting(containerEl).setName("Calendar ID").setDesc("Usa \xABprimary\xBB o el ID del calendario (correo o ...@group.calendar.google.com).").addText(
@@ -1968,8 +2015,7 @@ var UniqueAgendaSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("Access token (pruebas)").setDesc("Token OAuth con scope https://www.googleapis.com/auth/calendar.readonly. Caduca; no es un flujo permanente.").addText((t) => {
       t.inputEl.type = "password";
       t.setValue(this.plugin.settings.googleAccessToken).onChange(async (v) => {
-        this.plugin.settings.googleAccessToken = v.trim();
-        await this.plugin.saveSettings();
+        await this.plugin.setSecretSetting("googleAccessToken", v.trim());
       });
     });
     this.plugin.localizeSettings?.(containerEl);

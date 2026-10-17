@@ -1,8 +1,8 @@
 {
   "id": "unique-suite",
   "name": "Unique Suite",
-  "version": "0.2.11",
-  "minAppVersion": "1.5.0",
+  "version": "0.2.12",
+  "minAppVersion": "1.11.5",
   "description": "University system with Home, class capture, daily notes, schedule, reminders, a layered agenda, and ICS (Google Calendar). Replaces unique and unique-agenda.",
   "author": "Benjamín Alcalde",
   "authorUrl": "https://github.com/Benhaman9",

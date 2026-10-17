@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.12
+
+- Move private ICS URLs and Google credentials from plugin settings into Obsidian SecretStorage; migrate existing settings on load. Requires Obsidian 1.11.5 or newer and device-local secret setup.
+- Keep event identity separate per calendar, preserve feed labels when calendars are removed, and avoid duplicating generated event headings on updates.
+- Disable automatic ICS pruning because incomplete feeds can otherwise delete valid notes.
+- Preserve diary text and daily notes when cleaning links to a deleted note; avoid ambiguous basename matches.
+- Add regression checks for credential migration, restart, calendar collisions, safe synchronization and diary cleanup.
+
 ## 0.2.11
 
 - **Quick capture shortcut:** the quick capture command now creates a new note in `01 Inbox`, matching the Home button. The existing shortcut assignment is preserved.
